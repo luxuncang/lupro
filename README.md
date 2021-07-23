@@ -62,4 +62,4 @@ Batchsubmission(lu)
 
 ## api 文档
 
-**完善中**
+[**lupro api** ](https://luxuncang.github.io/lupro/)
