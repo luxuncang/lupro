@@ -32,7 +32,7 @@ from dtanys import XDict
 from copy import copy
 
 __author__ = 'ShengXin Lu'
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 
 # UA池
 ua_list = [ 
@@ -243,6 +243,8 @@ class lupros():
     def delete(self, *args, **kw):
         return ('delete', args, kw)
     
+
+
 # `lupro` 引擎基类
 class lupro(metaclass=inherit):
     '''`lupro` 引擎基类'''
@@ -324,10 +326,10 @@ class lupro(metaclass=inherit):
             res = requests.request(*self.args, **self.kw)
         except:
             if self.proxie in lupro.Proxies:
-                lupro.Proxies.remove(self.proxies)
+                lupro.Proxies.remove(self.proxie)
             self.faultolt-=1
-            self.proxies = random.choice(lupro.Proxies)
-            self.kw['proxies'] = {'http': f"//{self.proxies}"}
+            self.proxie = random.choice(lupro.Proxies)
+            self.kw['proxies'] = {'http': f"//{self.proxie}"}
             print(logging(f"{self.filename}----->更新字典中！"))
             return self.task()
         if not res.status_code==200:
@@ -349,7 +351,7 @@ class lupro(metaclass=inherit):
             dict : 解析字典
         '''
         res = self.task()
-        if res:
+        if not res:
             return {}
         if res.apparent_encoding == None:
             res.encoding = 'utf-8'
@@ -374,7 +376,7 @@ class lupro(metaclass=inherit):
             dict : 解析字典
         '''
         res = self.task()
-        if res:
+        if not res:
             return {}
         if res.apparent_encoding == None:
             res.encoding = 'utf-8'
@@ -397,7 +399,7 @@ class lupro(metaclass=inherit):
             dict : 解析字典
         '''
         res = self.task()
-        if res:
+        if not res:
             return {}
         if res.apparent_encoding == None:
             res.encoding = 'utf-8'
@@ -415,7 +417,7 @@ class lupro(metaclass=inherit):
         '''保存文件方法，如果 `filename` 不为绝对路径,则保存文件的路径为当前目录'''
 
         res = self.task()
-        if res:
+        if not res:
             return ''
         if os.path.isabs(self.filename):
             path = os.path.split(self.filename)[0]
@@ -424,6 +426,10 @@ class lupro(metaclass=inherit):
         if not os.path.exists(path):
             os.makedirs(path)
         path = os.path.join(path,os.path.split(self.filename)[1]+f'.{self.format}')
+        if res.apparent_encoding == None:
+            res.encoding = 'utf-8'
+        else:
+            res.encoding = res.apparent_encoding
         with open(path,mode='wb') as f:
             f.write(res.content)
         return path
@@ -594,4 +600,8 @@ v1.0.4
 * 完全兼容 `requests` 一切操作，只需 `from lupro import lupro as requests` 即可不更改一行代码
 * 新增原生异步 `requests`请求 只需 `async_lupro([lupros.get('https://www.python.org')]*10)`
 * 标准化函数描述
+
+v1.0.5
+* 修复了 `lupro.lupro` 解析方法判断的失误
+* 修复了 移除无效代理的方式
 '''
