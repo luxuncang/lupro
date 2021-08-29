@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>lupro.controller API documentation</title>
+<meta name="description" content="lupro 内部控制器" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>lupro.controller</code></h1>
+</header>
+<section id="section-intro">
+<p>lupro 内部控制器</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#39;&#39;&#39;
+lupro 内部控制器
+&#39;&#39;&#39;
+
+from .typing import Any
+from .api import generator, Batchsubmission, BulkDownload, Batchanalysis, xpath_Batchanalysis, json_Batchanalysis, re_Batchanalysis
+from .publictool import reconfig, abnormal, original, persistence
+import atexit
+
+# 批量任务控制器
+class batch():
+    &#39;&#39;&#39;批量任务控制器&#39;&#39;&#39;
+
+    def __init__(self, instantiation, url : list, filenameNo : list = []) -&gt; list:
+        &#39;&#39;&#39;实例化生成器
+
+        Args:
+            `instantiation` : `lupro` lupro模板实例
+            `url` : `list` 链接表
+            `filenameNo` : `list` filename 序列且此序列会继承 `instantiation.filename` 
+
+        Returns:
+            None
+        &#39;&#39;&#39;
+        self.name = instantiation.filename
+        self.generator = generator(instantiation, url, filenameNo)
+        self.filenameNo = [i.filename for i in self.generator]
+        persistence.shelve.add(self.name, {})
+    
+    # 任务自省
+    @reconfig(config = persistence.ENABLED)
+    def province(self):
+        &#39;&#39;&#39;任务自省&#39;&#39;&#39;
+        fail, success, task = [], [], []
+        dbdict = persistence.shelve.put()
+        for i,j in enumerate(self.filenameNo):
+            if not j in dbdict:
+                fail.append(j)
+                task.append(self.generator[i])
+                success.append(&#39;-&#39;) # not perfect
+            else:
+                success.append(dbdict[j])
+        persistence.shelve.add(self.name, {&#39;success&#39; : success, &#39;task&#39; : task, &#39;filenameNo&#39; : self.filenameNo})
+
+        print(f&#34;批量任务 {self.name} &gt;&gt; 一共有 {len(self.filenameNo)} 次请求&#34;, f&#34;失败了 {len(fail)} 次&#34; ,sep = &#39;\n&#39;)
+        if not len(fail)==0:
+            res = &#39;\n&#39; + &#39;\n&#39;.join(fail)
+            print(f&#34;分别是: {res}&#34;)
+
+    # 冷重启
+    @staticmethod
+    def coldheavy(filename) -&gt; None:
+        &#39;&#39;&#39;冷重启
+
+        Args：
+            `filename` : `str` 冷重启对象的 `self.name`
+            
+        Returns:
+            None
+        &#39;&#39;&#39;
+        Batchsubmission(persistence.shelve.put()[filename][&#39;task&#39;])
+
+    # 任务回调
+    @staticmethod
+    def callback(filename) -&gt; list:
+        &#39;&#39;&#39;任务反持久化
+
+        Args：
+            `filename` : `str` 冷重启对象的 `self.name`
+            
+        Returns:
+            None
+        &#39;&#39;&#39;
+        container = persistence.shelve.put()
+        return [container.get(i) for i in container[filename][&#39;filenameNo&#39;]]
+        
+    # 批量请求
+    @abnormal
+    def Batchsubmission(self) -&gt; list:
+        &#39;&#39;&#39;批量请求&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return Batchsubmission(self.generator)
+    
+    # 批量下载
+    @abnormal
+    def BulkDownload(self) -&gt; list:
+        &#39;&#39;&#39;批量下载&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return BulkDownload(self.generator)
+    
+    # 批量解析
+    @abnormal
+    def Batchanalysis(self, mold : str , analytic : dict, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return Batchanalysis(mold, self.generator, analytic, auxiliary)
+    
+    # xpath 批量解析
+    @abnormal
+    def xpath_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;xpath 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return xpath_Batchanalysis(self.generator, analytic, auxiliary)
+    
+    # json 批量解析
+    @abnormal
+    def json_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;json 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return json_Batchanalysis(self, analytic, auxiliary)    
+    
+    # 正则 批量解析
+    @abnormal
+    def re_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;正则 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return re_Batchanalysis(self.generator, analytic, auxiliary)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="lupro.controller.batch"><code class="flex name class">
+<span>class <span class="ident">batch</span></span>
+<span>(</span><span>instantiation, url: list, filenameNo: list = [])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量任务控制器</p>
+<p>实例化生成器</p>
+<h2 id="args">Args</h2>
+<p><code>instantiation</code> : <code><a title="lupro" href="index.html">lupro</a></code> lupro模板实例
+<code>url</code> : <code>list</code> 链接表
+<code>filenameNo</code> : <code>list</code> filename 序列且此序列会继承 <code>instantiation.filename</code> </p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class batch():
+    &#39;&#39;&#39;批量任务控制器&#39;&#39;&#39;
+
+    def __init__(self, instantiation, url : list, filenameNo : list = []) -&gt; list:
+        &#39;&#39;&#39;实例化生成器
+
+        Args:
+            `instantiation` : `lupro` lupro模板实例
+            `url` : `list` 链接表
+            `filenameNo` : `list` filename 序列且此序列会继承 `instantiation.filename` 
+
+        Returns:
+            None
+        &#39;&#39;&#39;
+        self.name = instantiation.filename
+        self.generator = generator(instantiation, url, filenameNo)
+        self.filenameNo = [i.filename for i in self.generator]
+        persistence.shelve.add(self.name, {})
+    
+    # 任务自省
+    @reconfig(config = persistence.ENABLED)
+    def province(self):
+        &#39;&#39;&#39;任务自省&#39;&#39;&#39;
+        fail, success, task = [], [], []
+        dbdict = persistence.shelve.put()
+        for i,j in enumerate(self.filenameNo):
+            if not j in dbdict:
+                fail.append(j)
+                task.append(self.generator[i])
+                success.append(&#39;-&#39;) # not perfect
+            else:
+                success.append(dbdict[j])
+        persistence.shelve.add(self.name, {&#39;success&#39; : success, &#39;task&#39; : task, &#39;filenameNo&#39; : self.filenameNo})
+
+        print(f&#34;批量任务 {self.name} &gt;&gt; 一共有 {len(self.filenameNo)} 次请求&#34;, f&#34;失败了 {len(fail)} 次&#34; ,sep = &#39;\n&#39;)
+        if not len(fail)==0:
+            res = &#39;\n&#39; + &#39;\n&#39;.join(fail)
+            print(f&#34;分别是: {res}&#34;)
+
+    # 冷重启
+    @staticmethod
+    def coldheavy(filename) -&gt; None:
+        &#39;&#39;&#39;冷重启
+
+        Args：
+            `filename` : `str` 冷重启对象的 `self.name`
+            
+        Returns:
+            None
+        &#39;&#39;&#39;
+        Batchsubmission(persistence.shelve.put()[filename][&#39;task&#39;])
+
+    # 任务回调
+    @staticmethod
+    def callback(filename) -&gt; list:
+        &#39;&#39;&#39;任务反持久化
+
+        Args：
+            `filename` : `str` 冷重启对象的 `self.name`
+            
+        Returns:
+            None
+        &#39;&#39;&#39;
+        container = persistence.shelve.put()
+        return [container.get(i) for i in container[filename][&#39;filenameNo&#39;]]
+        
+    # 批量请求
+    @abnormal
+    def Batchsubmission(self) -&gt; list:
+        &#39;&#39;&#39;批量请求&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return Batchsubmission(self.generator)
+    
+    # 批量下载
+    @abnormal
+    def BulkDownload(self) -&gt; list:
+        &#39;&#39;&#39;批量下载&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return BulkDownload(self.generator)
+    
+    # 批量解析
+    @abnormal
+    def Batchanalysis(self, mold : str , analytic : dict, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return Batchanalysis(mold, self.generator, analytic, auxiliary)
+    
+    # xpath 批量解析
+    @abnormal
+    def xpath_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;xpath 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return xpath_Batchanalysis(self.generator, analytic, auxiliary)
+    
+    # json 批量解析
+    @abnormal
+    def json_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;json 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return json_Batchanalysis(self, analytic, auxiliary)    
+    
+    # 正则 批量解析
+    @abnormal
+    def re_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;正则 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return re_Batchanalysis(self.generator, analytic, auxiliary)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="lupro.controller.batch.callback"><code class="name flex">
+<span>def <span class="ident">callback</span></span>(<span>filename) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>任务反持久化</p>
+<p>Args：
+<code>filename</code> : <code>str</code> 冷重启对象的 <code>self.name</code></p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def callback(filename) -&gt; list:
+    &#39;&#39;&#39;任务反持久化
+
+    Args：
+        `filename` : `str` 冷重启对象的 `self.name`
+        
+    Returns:
+        None
+    &#39;&#39;&#39;
+    container = persistence.shelve.put()
+    return [container.get(i) for i in container[filename][&#39;filenameNo&#39;]]</code></pre>
+</details>
+</dd>
+<dt id="lupro.controller.batch.coldheavy"><code class="name flex">
+<span>def <span class="ident">coldheavy</span></span>(<span>filename) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>冷重启</p>
+<p>Args：
+<code>filename</code> : <code>str</code> 冷重启对象的 <code>self.name</code></p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def coldheavy(filename) -&gt; None:
+    &#39;&#39;&#39;冷重启
+
+    Args：
+        `filename` : `str` 冷重启对象的 `self.name`
+        
+    Returns:
+        None
+    &#39;&#39;&#39;
+    Batchsubmission(persistence.shelve.put()[filename][&#39;task&#39;])</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="lupro.controller.batch.Batchanalysis"><code class="name flex">
+<span>def <span class="ident">Batchanalysis</span></span>(<span>self, mold: str, analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def Batchanalysis(self, mold : str , analytic : dict, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return Batchanalysis(mold, self.generator, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.controller.batch.Batchsubmission"><code class="name flex">
+<span>def <span class="ident">Batchsubmission</span></span>(<span>self) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量请求</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def Batchsubmission(self) -&gt; list:
+    &#39;&#39;&#39;批量请求&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return Batchsubmission(self.generator)</code></pre>
+</details>
+</dd>
+<dt id="lupro.controller.batch.BulkDownload"><code class="name flex">
+<span>def <span class="ident">BulkDownload</span></span>(<span>self) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量下载</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def BulkDownload(self) -&gt; list:
+    &#39;&#39;&#39;批量下载&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return BulkDownload(self.generator)</code></pre>
+</details>
+</dd>
+<dt id="lupro.controller.batch.json_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">json_Batchanalysis</span></span>(<span>self, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>json 批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def json_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;json 批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return json_Batchanalysis(self, analytic, auxiliary)    </code></pre>
+</details>
+</dd>
+<dt id="lupro.controller.batch.province"><code class="name flex">
+<span>def <span class="ident">province</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>任务自省</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@reconfig(config = persistence.ENABLED)
+def province(self):
+    &#39;&#39;&#39;任务自省&#39;&#39;&#39;
+    fail, success, task = [], [], []
+    dbdict = persistence.shelve.put()
+    for i,j in enumerate(self.filenameNo):
+        if not j in dbdict:
+            fail.append(j)
+            task.append(self.generator[i])
+            success.append(&#39;-&#39;) # not perfect
+        else:
+            success.append(dbdict[j])
+    persistence.shelve.add(self.name, {&#39;success&#39; : success, &#39;task&#39; : task, &#39;filenameNo&#39; : self.filenameNo})
+
+    print(f&#34;批量任务 {self.name} &gt;&gt; 一共有 {len(self.filenameNo)} 次请求&#34;, f&#34;失败了 {len(fail)} 次&#34; ,sep = &#39;\n&#39;)
+    if not len(fail)==0:
+        res = &#39;\n&#39; + &#39;\n&#39;.join(fail)
+        print(f&#34;分别是: {res}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="lupro.controller.batch.re_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">re_Batchanalysis</span></span>(<span>self, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>正则 批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def re_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;正则 批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return re_Batchanalysis(self.generator, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.controller.batch.xpath_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">xpath_Batchanalysis</span></span>(<span>self, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>xpath 批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def xpath_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;xpath 批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return xpath_Batchanalysis(self.generator, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="lupro" href="index.html">lupro</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="lupro.controller.batch" href="#lupro.controller.batch">batch</a></code></h4>
+<ul class="two-column">
+<li><code><a title="lupro.controller.batch.Batchanalysis" href="#lupro.controller.batch.Batchanalysis">Batchanalysis</a></code></li>
+<li><code><a title="lupro.controller.batch.Batchsubmission" href="#lupro.controller.batch.Batchsubmission">Batchsubmission</a></code></li>
+<li><code><a title="lupro.controller.batch.BulkDownload" href="#lupro.controller.batch.BulkDownload">BulkDownload</a></code></li>
+<li><code><a title="lupro.controller.batch.callback" href="#lupro.controller.batch.callback">callback</a></code></li>
+<li><code><a title="lupro.controller.batch.coldheavy" href="#lupro.controller.batch.coldheavy">coldheavy</a></code></li>
+<li><code><a title="lupro.controller.batch.json_Batchanalysis" href="#lupro.controller.batch.json_Batchanalysis">json_Batchanalysis</a></code></li>
+<li><code><a title="lupro.controller.batch.province" href="#lupro.controller.batch.province">province</a></code></li>
+<li><code><a title="lupro.controller.batch.re_Batchanalysis" href="#lupro.controller.batch.re_Batchanalysis">re_Batchanalysis</a></code></li>
+<li><code><a title="lupro.controller.batch.xpath_Batchanalysis" href="#lupro.controller.batch.xpath_Batchanalysis">xpath_Batchanalysis</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
