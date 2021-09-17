@@ -98,10 +98,10 @@ class batch():
             `filename` : `str` 冷重启对象的 `self.name`
             
         Returns:
-            None
+            list task列表
         &#39;&#39;&#39;
         container = persistence.shelve.put()
-        return [container.get(i) for i in container[filename][&#39;filenameNo&#39;]]
+        return {i:container.get(i) for i in container[filename][&#39;filenameNo&#39;]}
         
     # 批量请求
     @abnormal
@@ -233,10 +233,10 @@ class batch():
             `filename` : `str` 冷重启对象的 `self.name`
             
         Returns:
-            None
+            list task列表
         &#39;&#39;&#39;
         container = persistence.shelve.put()
-        return [container.get(i) for i in container[filename][&#39;filenameNo&#39;]]
+        return {i:container.get(i) for i in container[filename][&#39;filenameNo&#39;]}
         
     # 批量请求
     @abnormal
@@ -290,7 +290,7 @@ class batch():
 <p>Args：
 <code>filename</code> : <code>str</code> 冷重启对象的 <code>self.name</code></p>
 <h2 id="returns">Returns</h2>
-<p>None</p></div>
+<p>list task列表</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -303,10 +303,10 @@ def callback(filename) -&gt; list:
         `filename` : `str` 冷重启对象的 `self.name`
         
     Returns:
-        None
+        list task列表
     &#39;&#39;&#39;
     container = persistence.shelve.put()
-    return [container.get(i) for i in container[filename][&#39;filenameNo&#39;]]</code></pre>
+    return {i:container.get(i) for i in container[filename][&#39;filenameNo&#39;]}</code></pre>
 </details>
 </dd>
 <dt id="lupro.controller.batch.coldheavy"><code class="name flex">

@@ -28,12 +28,13 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#39;&#39;&#39;lupro api&#39;&#39;&#39;
-
+import gevent
+from .config import HTTP_ENGINE
+from .typing import Union, Response
 from .hooks import lupros
-from .HTTPengine import lupro, requests
+from .HTTPengine import lupro, analyze, requests
 from .publictool import original
 from copy import copy
-import gevent
 
 # 实例化参数字典
 def requests_dict(luprodir,url,no) -&gt; dict:
@@ -97,7 +98,6 @@ def BulkDownload(generator) -&gt; list:
     &#39;&#39;&#39;通过实例列表的批量下载
     
     Args：
-
         `generator` : `list[lupro]` lupro实例列表
     
     Returns:
@@ -108,60 +108,69 @@ def BulkDownload(generator) -&gt; list:
     return ([i.value for i in a])
 
 # xpath 批量解析
-def xpath_Batchanalysis(generator, analytic, auxiliary = original) -&gt; list:
+def xpath_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39; xpath批量解析器
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
         
     Returns:
         list[dict] : 解析列表
     &#39;&#39;&#39;
-    a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.xpath(i, analytic, auxiliary) for i in generator]
 
 # json 批量解析
-def json_Batchanalysis(generator, analytic, auxiliary = original) -&gt; list:
+def json_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39;json批量解析器 &lt;json解析器为 `dtanys`&gt;
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
     
     Returns:
         list[dict] : 解析列表
     &#39;&#39;&#39;
-    a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.json(i, analytic, auxiliary) for i in generator]
 
 # 正则 批量解析
-def re_Batchanalysis(generator, analytic, auxiliary = original) -&gt; list:
+def re_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39;正则解析器
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict`{`str`:`function`} 正则解析字典 
         `auxiliary` : `function` 自定义解析处理
     
     Returns:
         list[dict] : 解析列表
     &#39;&#39;&#39;
-    a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.re(i, analytic, auxiliary) for i in generator]
 
 # 批量解析
-def Batchanalysis(mold : str ,generator : list, analytic : dict, auxiliary = original) -&gt; list:
+def Batchanalysis(mold : str ,generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39;lupro批量解析
 
     Args:
         `mold` : `str` 解析方法
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
 
@@ -188,7 +197,7 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
         list[Response] : Response列表
     &#39;&#39;&#39;
 
-    a = [gevent.spawn(requests.request,i[0],*i[1],**i[2]) for i in generator]
+    a = [gevent.spawn(HTTP_ENGINE.request,i[0],*i[1],**i[2]) for i in generator]
     gevent.joinall(a)
     return ([i.value for i in a])</code></pre>
 </details>
@@ -201,13 +210,13 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="lupro.api.Batchanalysis"><code class="name flex">
-<span>def <span class="ident">Batchanalysis</span></span>(<span>mold: str, generator: list, analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
+<span>def <span class="ident">Batchanalysis</span></span>(<span>mold: str, generator: Union[ForwardRef('list[<a title="lupro" href="index.html">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>lupro批量解析</p>
 <h2 id="args">Args</h2>
 <p><code>mold</code> : <code>str</code> 解析方法
-<code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>list[<a title="lupro" href="index.html">lupro</a>]</code> lupro实例列表
+<code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>Union[list[<a title="lupro" href="index.html">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
 <code>analytic</code> : <code>dict</code> 解析字典
 <code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
 <h2 id="returns">Returns</h2>
@@ -219,12 +228,12 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def Batchanalysis(mold : str ,generator : list, analytic : dict, auxiliary = original) -&gt; list:
+<pre><code class="python">def Batchanalysis(mold : str ,generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39;lupro批量解析
 
     Args:
         `mold` : `str` 解析方法
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
 
@@ -276,9 +285,8 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 </code></dt>
 <dd>
 <div class="desc"><p>通过实例列表的批量下载</p>
-<p>Args：</p>
-<pre><code>&lt;code&gt;&lt;a title="lupro.api.generator" href="#lupro.api.generator"&gt;generator()&lt;/a&gt;&lt;/code&gt; : &lt;code&gt;list\[&lt;a title="lupro" href="index.html"&gt;lupro&lt;/a&gt;]&lt;/code&gt; lupro实例列表
-</code></pre>
+<p>Args：
+<code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>list[<a title="lupro" href="index.html">lupro</a>]</code> lupro实例列表</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>list </code></dt>
@@ -292,7 +300,6 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
     &#39;&#39;&#39;通过实例列表的批量下载
     
     Args：
-
         `generator` : `list[lupro]` lupro实例列表
     
     Returns:
@@ -329,7 +336,7 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
         list[Response] : Response列表
     &#39;&#39;&#39;
 
-    a = [gevent.spawn(requests.request,i[0],*i[1],**i[2]) for i in generator]
+    a = [gevent.spawn(HTTP_ENGINE.request,i[0],*i[1],**i[2]) for i in generator]
     gevent.joinall(a)
     return ([i.value for i in a])</code></pre>
 </details>
@@ -376,12 +383,12 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 </details>
 </dd>
 <dt id="lupro.api.json_Batchanalysis"><code class="name flex">
-<span>def <span class="ident">json_Batchanalysis</span></span>(<span>generator, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+<span>def <span class="ident">json_Batchanalysis</span></span>(<span>generator: Union[ForwardRef('list[<a title="lupro" href="index.html">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>json批量解析器 <json解析器为 \<code>dtanys\</code>></p>
 <h2 id="args">Args</h2>
-<p><code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>list[<a title="lupro" href="index.html">lupro</a>]</code> lupro实例列表
+<p><code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>Union[list[<a title="lupro" href="index.html">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
 <code>analytic</code> : <code>dict</code> 解析字典
 <code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
 <h2 id="returns">Returns</h2>
@@ -393,29 +400,32 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def json_Batchanalysis(generator, analytic, auxiliary = original) -&gt; list:
+<pre><code class="python">def json_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39;json批量解析器 &lt;json解析器为 `dtanys`&gt;
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
     
     Returns:
         list[dict] : 解析列表
     &#39;&#39;&#39;
-    a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])</code></pre>
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.json(i, analytic, auxiliary) for i in generator]</code></pre>
 </details>
 </dd>
 <dt id="lupro.api.re_Batchanalysis"><code class="name flex">
-<span>def <span class="ident">re_Batchanalysis</span></span>(<span>generator, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+<span>def <span class="ident">re_Batchanalysis</span></span>(<span>generator: Union[ForwardRef('list[<a title="lupro" href="index.html">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>正则解析器</p>
 <h2 id="args">Args</h2>
-<p><code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>list[<a title="lupro" href="index.html">lupro</a>]</code> lupro实例列表
+<p><code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>Union[list[<a title="lupro" href="index.html">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
 <code>analytic</code> : <code>dict</code>{<code>str</code>:<code>function</code>} 正则解析字典
 <code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
 <h2 id="returns">Returns</h2>
@@ -427,20 +437,23 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def re_Batchanalysis(generator, analytic, auxiliary = original) -&gt; list:
+<pre><code class="python">def re_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39;正则解析器
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict`{`str`:`function`} 正则解析字典 
         `auxiliary` : `function` 自定义解析处理
     
     Returns:
         list[dict] : 解析列表
     &#39;&#39;&#39;
-    a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])</code></pre>
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.re(i, analytic, auxiliary) for i in generator]</code></pre>
 </details>
 </dd>
 <dt id="lupro.api.requests_dict"><code class="name flex">
@@ -482,12 +495,12 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 </details>
 </dd>
 <dt id="lupro.api.xpath_Batchanalysis"><code class="name flex">
-<span>def <span class="ident">xpath_Batchanalysis</span></span>(<span>generator, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+<span>def <span class="ident">xpath_Batchanalysis</span></span>(<span>generator: Union[ForwardRef('list[<a title="lupro" href="index.html">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>xpath批量解析器</p>
 <h2 id="args">Args</h2>
-<p><code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>list[<a title="lupro" href="index.html">lupro</a>]</code> lupro实例列表
+<p><code><a title="lupro.api.generator" href="#lupro.api.generator">generator()</a></code> : <code>Union[list[<a title="lupro" href="index.html">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
 <code>analytic</code> : <code>dict</code> 解析字典
 <code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
 <h2 id="returns">Returns</h2>
@@ -499,20 +512,23 @@ def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def xpath_Batchanalysis(generator, analytic, auxiliary = original) -&gt; list:
+<pre><code class="python">def xpath_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
     &#39;&#39;&#39; xpath批量解析器
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
         
     Returns:
         list[dict] : 解析列表
     &#39;&#39;&#39;
-    a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])</code></pre>
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.xpath(i, analytic, auxiliary) for i in generator]</code></pre>
 </details>
 </dd>
 </dl>

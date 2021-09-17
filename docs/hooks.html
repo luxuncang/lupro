@@ -88,13 +88,52 @@ class requests(metaclass = repr):
         return (&#39;delete&#39;, args, kw)
 
     def __repr__(self) -&gt; str:
-        return f&#34;&lt;{__name__}.requests object &gt;&#34;
+        return &#34;&lt;lupros.requests object &gt;&#34;
+
+# httpx参数引擎
+class httpx(metaclass = repr):
+    &#39;&#39;&#39;`httpx参数引擎` 辅助字典生成器&#39;&#39;&#39;
+
+    @classmethod
+    def request(cls, *args, **kw):
+        return (args, kw)
+
+    @classmethod
+    def get(cls, *args, **kw):
+        return (&#39;GET&#39;, args, kw)
+
+    @classmethod
+    def post(cls, *args, **kw):
+        return (&#39;POST&#39;, args, kw)
+
+    @classmethod
+    def options(cls, *args, **kw):
+        return (&#39;OPTIONS&#39;, args, kw)
+
+    @classmethod
+    def head(cls, *args, **kw):
+        return (&#39;HEAD&#39;, args, kw)
+
+    @classmethod
+    def put(cls, *args, **kw):
+        return (&#39;PUT&#39;, args, kw)
+
+    @classmethod
+    def patch(cls, *args, **kw):
+        return (&#39;PATCH&#39;, args, kw)
+
+    @classmethod
+    def delete(cls, *args, **kw):
+        return (&#39;DELETE&#39;, args, kw)
+
+    def __repr__(self) -&gt; str:
+        return &#34;&lt;lupros.httpx object &gt;&#34;
 
 # `HTTP参数引擎` 
 class lupros(metaclass = inherit):
     &#39;&#39;&#39;`HTTP参数引擎` 辅助字典生成器&#39;&#39;&#39;
 
-    kernel = {&#39;requests&#39;: requests}
+    kernel = {&#39;requests&#39;: requests, &#39;httpx&#39; : httpx}
 
     __general__ = kernel[HTTP_ENGINE.__name__]</code></pre>
 </details>
@@ -108,6 +147,169 @@ class lupros(metaclass = inherit):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="lupro.hooks.httpx"><code class="flex name class">
+<span>class <span class="ident">httpx</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p><code>httpx参数引擎</code> 辅助字典生成器</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class httpx(metaclass = repr):
+    &#39;&#39;&#39;`httpx参数引擎` 辅助字典生成器&#39;&#39;&#39;
+
+    @classmethod
+    def request(cls, *args, **kw):
+        return (args, kw)
+
+    @classmethod
+    def get(cls, *args, **kw):
+        return (&#39;GET&#39;, args, kw)
+
+    @classmethod
+    def post(cls, *args, **kw):
+        return (&#39;POST&#39;, args, kw)
+
+    @classmethod
+    def options(cls, *args, **kw):
+        return (&#39;OPTIONS&#39;, args, kw)
+
+    @classmethod
+    def head(cls, *args, **kw):
+        return (&#39;HEAD&#39;, args, kw)
+
+    @classmethod
+    def put(cls, *args, **kw):
+        return (&#39;PUT&#39;, args, kw)
+
+    @classmethod
+    def patch(cls, *args, **kw):
+        return (&#39;PATCH&#39;, args, kw)
+
+    @classmethod
+    def delete(cls, *args, **kw):
+        return (&#39;DELETE&#39;, args, kw)
+
+    def __repr__(self) -&gt; str:
+        return &#34;&lt;lupros.httpx object &gt;&#34;</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="lupro.hooks.httpx.delete"><code class="name flex">
+<span>def <span class="ident">delete</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def delete(cls, *args, **kw):
+    return (&#39;DELETE&#39;, args, kw)</code></pre>
+</details>
+</dd>
+<dt id="lupro.hooks.httpx.get"><code class="name flex">
+<span>def <span class="ident">get</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get(cls, *args, **kw):
+    return (&#39;GET&#39;, args, kw)</code></pre>
+</details>
+</dd>
+<dt id="lupro.hooks.httpx.head"><code class="name flex">
+<span>def <span class="ident">head</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def head(cls, *args, **kw):
+    return (&#39;HEAD&#39;, args, kw)</code></pre>
+</details>
+</dd>
+<dt id="lupro.hooks.httpx.options"><code class="name flex">
+<span>def <span class="ident">options</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def options(cls, *args, **kw):
+    return (&#39;OPTIONS&#39;, args, kw)</code></pre>
+</details>
+</dd>
+<dt id="lupro.hooks.httpx.patch"><code class="name flex">
+<span>def <span class="ident">patch</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def patch(cls, *args, **kw):
+    return (&#39;PATCH&#39;, args, kw)</code></pre>
+</details>
+</dd>
+<dt id="lupro.hooks.httpx.post"><code class="name flex">
+<span>def <span class="ident">post</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def post(cls, *args, **kw):
+    return (&#39;POST&#39;, args, kw)</code></pre>
+</details>
+</dd>
+<dt id="lupro.hooks.httpx.put"><code class="name flex">
+<span>def <span class="ident">put</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def put(cls, *args, **kw):
+    return (&#39;PUT&#39;, args, kw)</code></pre>
+</details>
+</dd>
+<dt id="lupro.hooks.httpx.request"><code class="name flex">
+<span>def <span class="ident">request</span></span>(<span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def request(cls, *args, **kw):
+    return (args, kw)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="lupro.hooks.inherit"><code class="flex name class">
 <span>class <span class="ident">inherit</span></span>
 <span>(</span><span>*args, **kwargs)</span>
@@ -145,7 +347,7 @@ class lupros(metaclass = inherit):
 <pre><code class="python">class lupros(metaclass = inherit):
     &#39;&#39;&#39;`HTTP参数引擎` 辅助字典生成器&#39;&#39;&#39;
 
-    kernel = {&#39;requests&#39;: requests}
+    kernel = {&#39;requests&#39;: requests, &#39;httpx&#39; : httpx}
 
     __general__ = kernel[HTTP_ENGINE.__name__]</code></pre>
 </details>
@@ -223,7 +425,7 @@ class lupros(metaclass = inherit):
         return (&#39;delete&#39;, args, kw)
 
     def __repr__(self) -&gt; str:
-        return f&#34;&lt;{__name__}.requests object &gt;&#34;</code></pre>
+        return &#34;&lt;lupros.requests object &gt;&#34;</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -357,6 +559,19 @@ def request(cls, *args, **kw):
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
+<li>
+<h4><code><a title="lupro.hooks.httpx" href="#lupro.hooks.httpx">httpx</a></code></h4>
+<ul class="two-column">
+<li><code><a title="lupro.hooks.httpx.delete" href="#lupro.hooks.httpx.delete">delete</a></code></li>
+<li><code><a title="lupro.hooks.httpx.get" href="#lupro.hooks.httpx.get">get</a></code></li>
+<li><code><a title="lupro.hooks.httpx.head" href="#lupro.hooks.httpx.head">head</a></code></li>
+<li><code><a title="lupro.hooks.httpx.options" href="#lupro.hooks.httpx.options">options</a></code></li>
+<li><code><a title="lupro.hooks.httpx.patch" href="#lupro.hooks.httpx.patch">patch</a></code></li>
+<li><code><a title="lupro.hooks.httpx.post" href="#lupro.hooks.httpx.post">post</a></code></li>
+<li><code><a title="lupro.hooks.httpx.put" href="#lupro.hooks.httpx.put">put</a></code></li>
+<li><code><a title="lupro.hooks.httpx.request" href="#lupro.hooks.httpx.request">request</a></code></li>
+</ul>
+</li>
 <li>
 <h4><code><a title="lupro.hooks.inherit" href="#lupro.hooks.inherit">inherit</a></code></h4>
 </li>

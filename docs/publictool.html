@@ -29,11 +29,11 @@
 </summary>
 <pre><code class="python">&#39;&#39;&#39;lupro 工具箱&#39;&#39;&#39;
 
-from .typing import Any
+from .typing import Any , Response
 from .config import PERSISTENCE_ENABLED, PERSISTENCE_PATH
 from decorator import decorator
 import shelve
-
+import chardet
 
 # 泛属性元类
 class inherit(type):
@@ -156,7 +156,22 @@ def putdefault(value, default) -&gt; Any:
     if value:
         return value
     else:
-        return default</code></pre>
+        return default
+
+# bytes编码解析
+def bytescoding(response : bytes) -&gt; str:
+    &#39;&#39;&#39;bytes编码解析&#39;&#39;&#39;
+    dend = chardet.detect(response)
+    return response.decode(encoding = dend[&#39;encoding&#39;])
+
+# response编码解析
+def responsecoding(response : Response) -&gt; str:
+    &#39;&#39;&#39;response编码解析&#39;&#39;&#39;
+    if response.apparent_encoding == None:
+        return bytescoding(response.content)
+    else:
+        response.encoding = response.apparent_encoding
+        return response.content.decode(response.encoding, &#39;ignore&#39;)</code></pre>
 </details>
 </section>
 <section>
@@ -182,6 +197,21 @@ def abnormal(func, *args, **kwargs):
         return func(*args, **kwargs)
     except KeyboardInterrupt:
         pass</code></pre>
+</details>
+</dd>
+<dt id="lupro.publictool.bytescoding"><code class="name flex">
+<span>def <span class="ident">bytescoding</span></span>(<span>response: bytes) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>bytes编码解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bytescoding(response : bytes) -&gt; str:
+    &#39;&#39;&#39;bytes编码解析&#39;&#39;&#39;
+    dend = chardet.detect(response)
+    return response.decode(encoding = dend[&#39;encoding&#39;])</code></pre>
 </details>
 </dd>
 <dt id="lupro.publictool.endurance"><code class="name flex">
@@ -273,6 +303,24 @@ def reconfig(func, config = True, *args, **kwargs):
         return func(*args , **kwargs)
     else:
         return None</code></pre>
+</details>
+</dd>
+<dt id="lupro.publictool.responsecoding"><code class="name flex">
+<span>def <span class="ident">responsecoding</span></span>(<span>response: requests.models.Response) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>response编码解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def responsecoding(response : Response) -&gt; str:
+    &#39;&#39;&#39;response编码解析&#39;&#39;&#39;
+    if response.apparent_encoding == None:
+        return bytescoding(response.content)
+    else:
+        response.encoding = response.apparent_encoding
+        return response.content.decode(response.encoding, &#39;ignore&#39;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -405,12 +453,14 @@ def reconfig(func, config = True, *args, **kwargs):
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="lupro.publictool.abnormal" href="#lupro.publictool.abnormal">abnormal</a></code></li>
+<li><code><a title="lupro.publictool.bytescoding" href="#lupro.publictool.bytescoding">bytescoding</a></code></li>
 <li><code><a title="lupro.publictool.endurance" href="#lupro.publictool.endurance">endurance</a></code></li>
 <li><code><a title="lupro.publictool.original" href="#lupro.publictool.original">original</a></code></li>
 <li><code><a title="lupro.publictool.putdefault" href="#lupro.publictool.putdefault">putdefault</a></code></li>
 <li><code><a title="lupro.publictool.reconfig" href="#lupro.publictool.reconfig">reconfig</a></code></li>
+<li><code><a title="lupro.publictool.responsecoding" href="#lupro.publictool.responsecoding">responsecoding</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>

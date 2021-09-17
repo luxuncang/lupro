@@ -30,20 +30,20 @@
 <pre><code class="python">&#39;&#39;&#39;
 lupro HTTP
 &#39;&#39;&#39;
+
 from gevent import monkey
 monkey.patch_all()  # 先引用
 import gevent
 from .config import HTTP_ENGINE, PROXIES, RUNFILE, VERIFY_PROXIES
-from .config import verify_proxies, logging, verify_proxies, get_proxies, get_header
+from .config import verify_proxies, logging, get_proxies, get_header
 from .hooks import lupros
 from .publictool import inherit, original, endurance
+from .analyzesController import analyze
 from .typing import Response
 import os
 import random
 import requests
-import re
-from lxml import etree
-from dtanys import XDict
+import httpx
 from copy import copy
 from datetime import datetime
 
@@ -51,30 +51,20 @@ from datetime import datetime
 class engine():
     &#39;&#39;&#39;HTTP 引擎&#39;&#39;&#39;
 
+    # requests
     @staticmethod
     def requests(self) -&gt; Response:
         &#39;&#39;&#39;`engine.requests` 为 `requests` 请求接口&#39;&#39;&#39;
-
-        if self.faultolt &lt;= 0:
-            print(f&#39;{self.filename} failed.&#39;)
-            return None
-        print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
-        try:
-            res = requests.request(*self.args, **self.kw)
-        except:
-            if self.proxie and self.proxie in lupro.Proxies:
-                lupro.Proxies.remove(self.proxie)
-                self.proxie = random.choice(lupro.Proxies)
-                self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
-            self.faultolt -= 1
-            print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
-            return engine.requests(self)
-        if not res.status_code == 200:
-            return engine.requests(self)
-        if len(res.content) &lt; self.content:
-            return engine.requests(self)
-        print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;))
+        res = requests.request(*self.args, **self.kw)
         return res
+
+    # httpx
+    @staticmethod
+    def httpx(self):
+        &#39;&#39;&#39;`engine.httpx` 为 `requests` 请求接口&#39;&#39;&#39;
+        res = requests.request(*self.args, **self.kw)
+        return res
+
 
 # `lupro` 引擎基类
 class lupro(metaclass = inherit):
@@ -148,10 +138,40 @@ class lupro(metaclass = inherit):
         gevent.joinall(auth_proxies)
         lupro.Proxies = [i.value for i in auth_proxies if i.value]
 
+    # 更新字典
+    def renew_proxie(self):
+        &#39;&#39;&#39;lupro实例 更新字典&#39;&#39;&#39;
+        lupro.Proxies.remove(self.proxie)
+        self.proxie = random.choice(lupro.Proxies)
+        if lupro.__general__.__name__ == &#39;requests&#39;:
+            self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
+        elif lupro.__general__.__name__ == &#39;httpx&#39;:
+            self.kw[&#39;proxies&#39;] = {&#39;http://&#39;: f&#34;http://{self.proxie}&#34;}
+
     # 请求方法 lupro 所有请求
     @endurance
     def task(self):
-        return getattr(engine, lupro.__general__.__name__)(self)
+        &#39;&#39;&#39;请求方法 lupro 所有请求接口&#39;&#39;&#39;
+        def ask(self):
+            if self.faultolt &lt;= 0:
+                print(f&#39;{self.filename} failed.&#39;)
+                return None
+            print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
+            try:
+                res = getattr(engine, lupro.__general__.__name__)(self)
+            except:
+                if self.proxie and self.proxie in lupro.Proxies:
+                    self.renew_proxie()
+                self.faultolt -= 1
+                print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
+                return ask(self)
+            if not res.status_code == 200:
+                return ask(self)
+            if len(res.content) &lt; self.content:
+                return ask(self)
+            print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;)) 
+            return res     
+        return ask(self)
     
     # xpath 解析
     def xpath_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
@@ -167,16 +187,7 @@ class lupro(metaclass = inherit):
         res = self.task()
         if not res:
             return {}
-        if res.apparent_encoding == None:
-            res.encoding = &#39;utf-8&#39;
-            html = etree.HTML(res.content.decode(&#39;utf-8&#39;))
-        else:
-            res.encoding = res.apparent_encoding
-            html = etree.HTML(res.content.decode(res.encoding, &#39;ignore&#39;))
-        res = {}
-        for i, j in analytic.items():
-            res[i] = [auxiliary(r) for r in html.xpath(j)]
-        return res
+        return analyze.xpath(res, analytic, auxiliary)
 
     # json 解析
     def json_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
@@ -192,17 +203,10 @@ class lupro(metaclass = inherit):
         res = self.task()
         if not res:
             return {}
-        if res.apparent_encoding == None:
-            res.encoding = &#39;utf-8&#39;
-        else:
-            res.encoding = res.apparent_encoding
-        reDict = {}
-        for i,j in analytic.items():
-            reDict[i] = auxiliary(XDict(res.json(),j).edict())
-        return reDict
+        return analyze.json(res, analytic, auxiliary)
 
     # 正则 解析
-    def re_analysis(self, analytic, auxiliary = original):
+    def re_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
         &#39;&#39;&#39;实例 正则 解析方法.
 
         Args:
@@ -215,16 +219,23 @@ class lupro(metaclass = inherit):
         res = self.task()
         if not res:
             return {}
-        if res.apparent_encoding == None:
-            res.encoding = &#39;utf-8&#39;
-            html = etree.HTML(res.content.decode(&#39;utf-8&#39;))
-        else:
-            res.encoding = res.apparent_encoding
-            html = etree.HTML(res.content.decode(res.encoding, &#39;ignore&#39;))
-        res = {}
-        for i, j in analytic.items():
-            res[i]=[auxiliary(r) for r in j(html)]
-        return res
+        return analyze.re(res, analytic, auxiliary)
+
+    # css 解析
+    def css_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+        &#39;&#39;&#39;实例 css 解析方法.
+
+        Args:
+            `analytic` : `dict[str:str]` css解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = self.task()
+        if not res:
+            return {}
+        return analyze.css(res, analytic, auxiliary)
 
     # 保存文件路径
     def save_file(self) -&gt; str:
@@ -249,7 +260,7 @@ class lupro(metaclass = inherit):
         return path
 
     def __repr__(self) -&gt; str:
-        return f&#34;&lt;{__name__}.lupro object {self.filename}&gt;&#34;
+        return f&#34;&lt;{__name__}.lupro({lupro.__general__.__name__}) object {self.filename}&gt;&#34;
 
     def __reprs__(self) -&gt; dict:
         &#39;&#39;&#39; `__reprs__` 为 `lupro` 实例化参数&#39;&#39;&#39;
@@ -280,33 +291,38 @@ class lupro(metaclass = inherit):
 <pre><code class="python">class engine():
     &#39;&#39;&#39;HTTP 引擎&#39;&#39;&#39;
 
+    # requests
     @staticmethod
     def requests(self) -&gt; Response:
         &#39;&#39;&#39;`engine.requests` 为 `requests` 请求接口&#39;&#39;&#39;
+        res = requests.request(*self.args, **self.kw)
+        return res
 
-        if self.faultolt &lt;= 0:
-            print(f&#39;{self.filename} failed.&#39;)
-            return None
-        print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
-        try:
-            res = requests.request(*self.args, **self.kw)
-        except:
-            if self.proxie and self.proxie in lupro.Proxies:
-                lupro.Proxies.remove(self.proxie)
-                self.proxie = random.choice(lupro.Proxies)
-                self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
-            self.faultolt -= 1
-            print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
-            return engine.requests(self)
-        if not res.status_code == 200:
-            return engine.requests(self)
-        if len(res.content) &lt; self.content:
-            return engine.requests(self)
-        print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;))
+    # httpx
+    @staticmethod
+    def httpx(self):
+        &#39;&#39;&#39;`engine.httpx` 为 `requests` 请求接口&#39;&#39;&#39;
+        res = requests.request(*self.args, **self.kw)
         return res</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
+<dt id="lupro.HTTPengine.engine.httpx"><code class="name flex">
+<span>def <span class="ident">httpx</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p><code><a title="lupro.HTTPengine.engine.httpx" href="#lupro.HTTPengine.engine.httpx">engine.httpx()</a></code> 为 <code>requests</code> 请求接口</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def httpx(self):
+    &#39;&#39;&#39;`engine.httpx` 为 `requests` 请求接口&#39;&#39;&#39;
+    res = requests.request(*self.args, **self.kw)
+    return res</code></pre>
+</details>
+</dd>
 <dt id="lupro.HTTPengine.engine.requests"><code class="name flex">
 <span>def <span class="ident">requests</span></span>(<span>self) ‑> requests.models.Response</span>
 </code></dt>
@@ -319,26 +335,7 @@ class lupro(metaclass = inherit):
 <pre><code class="python">@staticmethod
 def requests(self) -&gt; Response:
     &#39;&#39;&#39;`engine.requests` 为 `requests` 请求接口&#39;&#39;&#39;
-
-    if self.faultolt &lt;= 0:
-        print(f&#39;{self.filename} failed.&#39;)
-        return None
-    print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
-    try:
-        res = requests.request(*self.args, **self.kw)
-    except:
-        if self.proxie and self.proxie in lupro.Proxies:
-            lupro.Proxies.remove(self.proxie)
-            self.proxie = random.choice(lupro.Proxies)
-            self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
-        self.faultolt -= 1
-        print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
-        return engine.requests(self)
-    if not res.status_code == 200:
-        return engine.requests(self)
-    if len(res.content) &lt; self.content:
-        return engine.requests(self)
-    print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;))
+    res = requests.request(*self.args, **self.kw)
     return res</code></pre>
 </details>
 </dd>
@@ -435,10 +432,40 @@ def requests(self) -&gt; Response:
         gevent.joinall(auth_proxies)
         lupro.Proxies = [i.value for i in auth_proxies if i.value]
 
+    # 更新字典
+    def renew_proxie(self):
+        &#39;&#39;&#39;lupro实例 更新字典&#39;&#39;&#39;
+        lupro.Proxies.remove(self.proxie)
+        self.proxie = random.choice(lupro.Proxies)
+        if lupro.__general__.__name__ == &#39;requests&#39;:
+            self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
+        elif lupro.__general__.__name__ == &#39;httpx&#39;:
+            self.kw[&#39;proxies&#39;] = {&#39;http://&#39;: f&#34;http://{self.proxie}&#34;}
+
     # 请求方法 lupro 所有请求
     @endurance
     def task(self):
-        return getattr(engine, lupro.__general__.__name__)(self)
+        &#39;&#39;&#39;请求方法 lupro 所有请求接口&#39;&#39;&#39;
+        def ask(self):
+            if self.faultolt &lt;= 0:
+                print(f&#39;{self.filename} failed.&#39;)
+                return None
+            print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
+            try:
+                res = getattr(engine, lupro.__general__.__name__)(self)
+            except:
+                if self.proxie and self.proxie in lupro.Proxies:
+                    self.renew_proxie()
+                self.faultolt -= 1
+                print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
+                return ask(self)
+            if not res.status_code == 200:
+                return ask(self)
+            if len(res.content) &lt; self.content:
+                return ask(self)
+            print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;)) 
+            return res     
+        return ask(self)
     
     # xpath 解析
     def xpath_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
@@ -454,16 +481,7 @@ def requests(self) -&gt; Response:
         res = self.task()
         if not res:
             return {}
-        if res.apparent_encoding == None:
-            res.encoding = &#39;utf-8&#39;
-            html = etree.HTML(res.content.decode(&#39;utf-8&#39;))
-        else:
-            res.encoding = res.apparent_encoding
-            html = etree.HTML(res.content.decode(res.encoding, &#39;ignore&#39;))
-        res = {}
-        for i, j in analytic.items():
-            res[i] = [auxiliary(r) for r in html.xpath(j)]
-        return res
+        return analyze.xpath(res, analytic, auxiliary)
 
     # json 解析
     def json_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
@@ -479,17 +497,10 @@ def requests(self) -&gt; Response:
         res = self.task()
         if not res:
             return {}
-        if res.apparent_encoding == None:
-            res.encoding = &#39;utf-8&#39;
-        else:
-            res.encoding = res.apparent_encoding
-        reDict = {}
-        for i,j in analytic.items():
-            reDict[i] = auxiliary(XDict(res.json(),j).edict())
-        return reDict
+        return analyze.json(res, analytic, auxiliary)
 
     # 正则 解析
-    def re_analysis(self, analytic, auxiliary = original):
+    def re_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
         &#39;&#39;&#39;实例 正则 解析方法.
 
         Args:
@@ -502,16 +513,23 @@ def requests(self) -&gt; Response:
         res = self.task()
         if not res:
             return {}
-        if res.apparent_encoding == None:
-            res.encoding = &#39;utf-8&#39;
-            html = etree.HTML(res.content.decode(&#39;utf-8&#39;))
-        else:
-            res.encoding = res.apparent_encoding
-            html = etree.HTML(res.content.decode(res.encoding, &#39;ignore&#39;))
-        res = {}
-        for i, j in analytic.items():
-            res[i]=[auxiliary(r) for r in j(html)]
-        return res
+        return analyze.re(res, analytic, auxiliary)
+
+    # css 解析
+    def css_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+        &#39;&#39;&#39;实例 css 解析方法.
+
+        Args:
+            `analytic` : `dict[str:str]` css解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = self.task()
+        if not res:
+            return {}
+        return analyze.css(res, analytic, auxiliary)
 
     # 保存文件路径
     def save_file(self) -&gt; str:
@@ -536,7 +554,7 @@ def requests(self) -&gt; Response:
         return path
 
     def __repr__(self) -&gt; str:
-        return f&#34;&lt;{__name__}.lupro object {self.filename}&gt;&#34;
+        return f&#34;&lt;{__name__}.lupro({lupro.__general__.__name__}) object {self.filename}&gt;&#34;
 
     def __reprs__(self) -&gt; dict:
         &#39;&#39;&#39; `__reprs__` 为 `lupro` 实例化参数&#39;&#39;&#39;
@@ -580,6 +598,39 @@ def requests(self) -&gt; Response:
     lupro.Proxies = [i.value for i in auth_proxies if i.value]</code></pre>
 </details>
 </dd>
+<dt id="lupro.HTTPengine.lupro.css_analysis"><code class="name flex">
+<span>def <span class="ident">css_analysis</span></span>(<span>self, analytic: dict, auxiliary=&lt;function original&gt;) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>实例 css 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>analytic</code> : <code>dict[str:str]</code> css解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def css_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+    &#39;&#39;&#39;实例 css 解析方法.
+
+    Args:
+        `analytic` : `dict[str:str]` css解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    res = self.task()
+    if not res:
+        return {}
+    return analyze.css(res, analytic, auxiliary)</code></pre>
+</details>
+</dd>
 <dt id="lupro.HTTPengine.lupro.json_analysis"><code class="name flex">
 <span>def <span class="ident">json_analysis</span></span>(<span>self, analytic: dict, auxiliary=&lt;function original&gt;) ‑> dict</span>
 </code></dt>
@@ -610,18 +661,11 @@ def requests(self) -&gt; Response:
     res = self.task()
     if not res:
         return {}
-    if res.apparent_encoding == None:
-        res.encoding = &#39;utf-8&#39;
-    else:
-        res.encoding = res.apparent_encoding
-    reDict = {}
-    for i,j in analytic.items():
-        reDict[i] = auxiliary(XDict(res.json(),j).edict())
-    return reDict</code></pre>
+    return analyze.json(res, analytic, auxiliary)</code></pre>
 </details>
 </dd>
 <dt id="lupro.HTTPengine.lupro.re_analysis"><code class="name flex">
-<span>def <span class="ident">re_analysis</span></span>(<span>self, analytic, auxiliary=&lt;function original&gt;)</span>
+<span>def <span class="ident">re_analysis</span></span>(<span>self, analytic: dict, auxiliary=&lt;function original&gt;) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>实例 正则 解析方法.</p>
@@ -637,7 +681,7 @@ def requests(self) -&gt; Response:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def re_analysis(self, analytic, auxiliary = original):
+<pre><code class="python">def re_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
     &#39;&#39;&#39;实例 正则 解析方法.
 
     Args:
@@ -650,16 +694,26 @@ def requests(self) -&gt; Response:
     res = self.task()
     if not res:
         return {}
-    if res.apparent_encoding == None:
-        res.encoding = &#39;utf-8&#39;
-        html = etree.HTML(res.content.decode(&#39;utf-8&#39;))
-    else:
-        res.encoding = res.apparent_encoding
-        html = etree.HTML(res.content.decode(res.encoding, &#39;ignore&#39;))
-    res = {}
-    for i, j in analytic.items():
-        res[i]=[auxiliary(r) for r in j(html)]
-    return res</code></pre>
+    return analyze.re(res, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.HTTPengine.lupro.renew_proxie"><code class="name flex">
+<span>def <span class="ident">renew_proxie</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>lupro实例 更新字典</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def renew_proxie(self):
+    &#39;&#39;&#39;lupro实例 更新字典&#39;&#39;&#39;
+    lupro.Proxies.remove(self.proxie)
+    self.proxie = random.choice(lupro.Proxies)
+    if lupro.__general__.__name__ == &#39;requests&#39;:
+        self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
+    elif lupro.__general__.__name__ == &#39;httpx&#39;:
+        self.kw[&#39;proxies&#39;] = {&#39;http://&#39;: f&#34;http://{self.proxie}&#34;}</code></pre>
 </details>
 </dd>
 <dt id="lupro.HTTPengine.lupro.save_file"><code class="name flex">
@@ -697,14 +751,34 @@ def requests(self) -&gt; Response:
 <span>def <span class="ident">task</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>请求方法 lupro 所有请求接口</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@endurance
 def task(self):
-    return getattr(engine, lupro.__general__.__name__)(self)</code></pre>
+    &#39;&#39;&#39;请求方法 lupro 所有请求接口&#39;&#39;&#39;
+    def ask(self):
+        if self.faultolt &lt;= 0:
+            print(f&#39;{self.filename} failed.&#39;)
+            return None
+        print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
+        try:
+            res = getattr(engine, lupro.__general__.__name__)(self)
+        except:
+            if self.proxie and self.proxie in lupro.Proxies:
+                self.renew_proxie()
+            self.faultolt -= 1
+            print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
+            return ask(self)
+        if not res.status_code == 200:
+            return ask(self)
+        if len(res.content) &lt; self.content:
+            return ask(self)
+        print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;)) 
+        return res     
+    return ask(self)</code></pre>
 </details>
 </dd>
 <dt id="lupro.HTTPengine.lupro.xpath_analysis"><code class="name flex">
@@ -737,16 +811,7 @@ def task(self):
     res = self.task()
     if not res:
         return {}
-    if res.apparent_encoding == None:
-        res.encoding = &#39;utf-8&#39;
-        html = etree.HTML(res.content.decode(&#39;utf-8&#39;))
-    else:
-        res.encoding = res.apparent_encoding
-        html = etree.HTML(res.content.decode(res.encoding, &#39;ignore&#39;))
-    res = {}
-    for i, j in analytic.items():
-        res[i] = [auxiliary(r) for r in html.xpath(j)]
-    return res</code></pre>
+    return analyze.xpath(res, analytic, auxiliary)</code></pre>
 </details>
 </dd>
 </dl>
@@ -770,6 +835,7 @@ def task(self):
 <li>
 <h4><code><a title="lupro.HTTPengine.engine" href="#lupro.HTTPengine.engine">engine</a></code></h4>
 <ul class="">
+<li><code><a title="lupro.HTTPengine.engine.httpx" href="#lupro.HTTPengine.engine.httpx">httpx</a></code></li>
 <li><code><a title="lupro.HTTPengine.engine.requests" href="#lupro.HTTPengine.engine.requests">requests</a></code></li>
 </ul>
 </li>
@@ -780,9 +846,11 @@ def task(self):
 <li><code><a title="lupro.HTTPengine.lupro.Proxies" href="#lupro.HTTPengine.lupro.Proxies">Proxies</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.VERIFY_PROXIES" href="#lupro.HTTPengine.lupro.VERIFY_PROXIES">VERIFY_PROXIES</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.authentication" href="#lupro.HTTPengine.lupro.authentication">authentication</a></code></li>
+<li><code><a title="lupro.HTTPengine.lupro.css_analysis" href="#lupro.HTTPengine.lupro.css_analysis">css_analysis</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.json_analysis" href="#lupro.HTTPengine.lupro.json_analysis">json_analysis</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.onFile" href="#lupro.HTTPengine.lupro.onFile">onFile</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.re_analysis" href="#lupro.HTTPengine.lupro.re_analysis">re_analysis</a></code></li>
+<li><code><a title="lupro.HTTPengine.lupro.renew_proxie" href="#lupro.HTTPengine.lupro.renew_proxie">renew_proxie</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.save_file" href="#lupro.HTTPengine.lupro.save_file">save_file</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.task" href="#lupro.HTTPengine.lupro.task">task</a></code></li>
 <li><code><a title="lupro.HTTPengine.lupro.xpath_analysis" href="#lupro.HTTPengine.lupro.xpath_analysis">xpath_analysis</a></code></li>

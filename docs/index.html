@@ -65,14 +65,30 @@ usage:
 :copyright: (c) 2021 by ShengXin Lu.
 &#39;&#39;&#39;
 
+from gevent import monkey
+monkey.patch_all()  # 先引用
 from .hooks import lupros
 from .controller import persistence, batch
-from .publictool import original, abnormal
-from .HTTPengine import lupro
+from .HTTPengine import lupro, analyze
 from .api import generator, Batchsubmission, BulkDownload, xpath_Batchanalysis, json_Batchanalysis, re_Batchanalysis, Batchanalysis, async_lupro
 from .__version__ import __title__, __description__, __url__, __version__
 from .__version__ import __author__, __author_email__, __license__
 
+__all__ = [
+   &#39;lupro&#39;,    # lupro 控制台 兼容HTTP客服端
+   &#39;lupros&#39;,   # lupros 请求参数
+   &#39;batch&#39;,    # 批量任务控制器
+   &#39;analyze&#39;,  # 解析器
+   &#39;persistence&#39;, # 对象持久化控制器
+   &#39;generator&#39;, 
+   &#39;Batchsubmission&#39;, 
+   &#39;BulkDownload&#39;, 
+   &#39;xpath_Batchanalysis&#39;, 
+   &#39;json_Batchanalysis&#39;, 
+   &#39;re_Batchanalysis&#39;, 
+   &#39;Batchanalysis&#39;, 
+   &#39;async_lupro&#39; # 极简批量请求
+]
 
 &#39;&#39;&#39;
 v1.0.4
@@ -84,11 +100,17 @@ v1.0.5
 * 修复了 `lupro.lupro` 解析方法判断的失误
 * 修复了 移除无效代理的方式
 
-v1.0.6
+v1.0.6 v1.0.7
 * 修复了不启用代理且请求错误时的，更新字典的方式
 * 文件结构优化
-* 新增对象持久化
-* 新增批量任务自省，冷重启
+* 新增对象持久化(shelve)
+* 新增批量任务自省，冷重启(atexit)
+
+v1.0.8
+* 改变了 response.encoding 为空时的编码推测(chardet)
+* 优化了html解析器的接口，`response` 类型可直接通过 `class analyze` 和 `class batch` 进行解析
+* 新增 css解析器(parsel)
+* 新增 httpx 客服端(httpx)
 &#39;&#39;&#39;</code></pre>
 </details>
 </section>
@@ -98,6 +120,10 @@ v1.0.6
 <dt><code class="name"><a title="lupro.HTTPengine" href="HTTPengine.html">lupro.HTTPengine</a></code></dt>
 <dd>
 <div class="desc"><p>lupro HTTP</p></div>
+</dd>
+<dt><code class="name"><a title="lupro.analyzesController" href="analyzesController.html">lupro.analyzesController</a></code></dt>
+<dd>
+<div class="desc"><p>response解析器</p></div>
 </dd>
 <dt><code class="name"><a title="lupro.api" href="api.html">lupro.api</a></code></dt>
 <dd>
@@ -132,8 +158,1438 @@ v1.0.6
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="lupro.Batchanalysis"><code class="name flex">
+<span>def <span class="ident">Batchanalysis</span></span>(<span>mold: str, generator: Union[ForwardRef('list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>lupro批量解析</p>
+<h2 id="args">Args</h2>
+<p><code>mold</code> : <code>str</code> 解析方法
+<code><a title="lupro.generator" href="#lupro.generator">generator()</a></code> : <code>Union[list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
+<code>analytic</code> : <code>dict</code> 解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[dict] </code></dt>
+<dd>解析列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Batchanalysis(mold : str ,generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;lupro批量解析
+
+    Args:
+        `mold` : `str` 解析方法
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
+        `analytic` : `dict` 解析字典
+        `auxiliary` : `function` 自定义解析处理
+
+    Returns:
+        list[dict] : 解析列表
+    &#39;&#39;&#39;
+    if mold == &#39;xpath&#39;:
+        return xpath_Batchanalysis(generator, analytic, auxiliary)
+    elif mold == &#39;json&#39;:
+        return json_Batchanalysis(generator, analytic, auxiliary)
+    elif mold == &#39;re&#39;:
+        return re_Batchanalysis(generator, analytic, auxiliary)
+    else:
+        raise TypeError(&#39;No corresponding parsing method!&#39;)</code></pre>
+</details>
+</dd>
+<dt id="lupro.Batchsubmission"><code class="name flex">
+<span>def <span class="ident">Batchsubmission</span></span>(<span>generator) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>通过实例列表的批量请求</p>
+<p>Args：
+<code><a title="lupro.generator" href="#lupro.generator">generator()</a></code> : <code>list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>]</code> lupro实例列表</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list </code></dt>
+<dd>Response列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Batchsubmission(generator) -&gt; list:
+    &#39;&#39;&#39;通过实例列表的批量请求
+    
+    Args：
+        `generator` : `list[lupro]` lupro实例列表
+    
+    Returns:
+        list : Response列表
+    &#39;&#39;&#39;
+    a = [gevent.spawn(i.task,) for i in generator]
+    gevent.joinall(a)
+    return ([i.value for i in a])</code></pre>
+</details>
+</dd>
+<dt id="lupro.BulkDownload"><code class="name flex">
+<span>def <span class="ident">BulkDownload</span></span>(<span>generator) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>通过实例列表的批量下载</p>
+<p>Args：
+<code><a title="lupro.generator" href="#lupro.generator">generator()</a></code> : <code>list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>]</code> lupro实例列表</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list </code></dt>
+<dd>path 列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def BulkDownload(generator) -&gt; list:
+    &#39;&#39;&#39;通过实例列表的批量下载
+    
+    Args：
+        `generator` : `list[lupro]` lupro实例列表
+    
+    Returns:
+        list : path 列表
+    &#39;&#39;&#39;
+    a = [gevent.spawn(i.save_file,) for i in generator]
+    gevent.joinall(a)
+    return ([i.value for i in a])</code></pre>
+</details>
+</dd>
+<dt id="lupro.async_lupro"><code class="name flex">
+<span>def <span class="ident">async_lupro</span></span>(<span>generator: list[<a title="lupro.lupros" href="#lupro.lupros">lupros</a>]) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>原生异步<code>requests</code>请求</p>
+<h2 id="args">Args</h2>
+<p><code><a title="lupro.generator" href="#lupro.generator">generator()</a></code> : <code>list[<a title="lupro.lupros" href="#lupro.lupros">lupros</a>]</code> lupros实例列表</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[Response] </code></dt>
+<dd>Response列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def async_lupro(generator : &#34;list[lupros]&#34;) -&gt; list:
+    &#39;&#39;&#39;原生异步`requests`请求
+
+    Args:
+        `generator` : `list[lupros]` lupros实例列表
+    
+    Returns:
+        list[Response] : Response列表
+    &#39;&#39;&#39;
+
+    a = [gevent.spawn(HTTP_ENGINE.request,i[0],*i[1],**i[2]) for i in generator]
+    gevent.joinall(a)
+    return ([i.value for i in a])</code></pre>
+</details>
+</dd>
+<dt id="lupro.generator"><code class="name flex">
+<span>def <span class="ident">generator</span></span>(<span>instantiation: <a title="lupro.HTTPengine.lupro" href="HTTPengine.html#lupro.HTTPengine.lupro">lupro</a>, url: list, filenameNo: list = []) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>实例化生成器</p>
+<h2 id="args">Args</h2>
+<p><code>instantiation</code> : <code><a title="lupro.lupro" href="#lupro.lupro">lupro</a></code> lupro模板实例
+<code>url</code> : <code>list</code> 链接表
+<code>filenameNo</code> : <code>list</code> filename 序列且此序列会继承 <code>instantiation.filename</code> </p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list </code></dt>
+<dd>lupro实例列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generator(instantiation : lupro, url : list, filenameNo : list = []) -&gt; list:
+    &#39;&#39;&#39;实例化生成器
+
+    Args:
+        `instantiation` : `lupro` lupro模板实例
+        `url` : `list` 链接表
+        `filenameNo` : `list` filename 序列且此序列会继承 `instantiation.filename` 
+
+    Returns:
+        list : lupro实例列表
+    &#39;&#39;&#39;
+    if not filenameNo:
+        filenameNo = range(len(url))
+    else:
+        if not len(url)==len(filenameNo):
+            raise ValueError(&#39;&#34;url&#34; needs to be consistent with &#34;FileNameno&#34;!&#39;)
+    repr = instantiation.__reprs__()
+    res = []
+    for i,j in enumerate(url):
+        res.append(lupro(**requests_dict(repr,j,filenameNo[i])))
+    return res</code></pre>
+</details>
+</dd>
+<dt id="lupro.json_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">json_Batchanalysis</span></span>(<span>generator: Union[ForwardRef('list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>json批量解析器 <json解析器为 \<code>dtanys\</code>></p>
+<h2 id="args">Args</h2>
+<p><code><a title="lupro.generator" href="#lupro.generator">generator()</a></code> : <code>Union[list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
+<code>analytic</code> : <code>dict</code> 解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[dict] </code></dt>
+<dd>解析列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def json_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;json批量解析器 &lt;json解析器为 `dtanys`&gt;
+
+    Args:
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
+        `analytic` : `dict` 解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        list[dict] : 解析列表
+    &#39;&#39;&#39;
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.json(i, analytic, auxiliary) for i in generator]</code></pre>
+</details>
+</dd>
+<dt id="lupro.re_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">re_Batchanalysis</span></span>(<span>generator: Union[ForwardRef('list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>正则解析器</p>
+<h2 id="args">Args</h2>
+<p><code><a title="lupro.generator" href="#lupro.generator">generator()</a></code> : <code>Union[list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
+<code>analytic</code> : <code>dict</code>{<code>str</code>:<code>function</code>} 正则解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[dict] </code></dt>
+<dd>解析列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def re_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;正则解析器
+
+    Args:
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
+        `analytic` : `dict`{`str`:`function`} 正则解析字典 
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        list[dict] : 解析列表
+    &#39;&#39;&#39;
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.re(i, analytic, auxiliary) for i in generator]</code></pre>
+</details>
+</dd>
+<dt id="lupro.xpath_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">xpath_Batchanalysis</span></span>(<span>generator: Union[ForwardRef('list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>]'), ForwardRef('list[Response]')], analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>xpath批量解析器</p>
+<h2 id="args">Args</h2>
+<p><code><a title="lupro.generator" href="#lupro.generator">generator()</a></code> : <code>Union[list[<a title="lupro.lupro" href="#lupro.lupro">lupro</a>], list[Response]]</code> lupro实例列表 或 Response实例列表
+<code>analytic</code> : <code>dict</code> 解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[dict] </code></dt>
+<dd>解析列表</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def xpath_Batchanalysis(generator : Union[&#34;list[lupro]&#34;, &#34;list[Response]&#34;], analytic : dict, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39; xpath批量解析器
+
+    Args:
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
+        `analytic` : `dict` 解析字典
+        `auxiliary` : `function` 自定义解析处理
+        
+    Returns:
+        list[dict] : 解析列表
+    &#39;&#39;&#39;
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.xpath(i, analytic, auxiliary) for i in generator]</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="lupro.analyze"><code class="flex name class">
+<span>class <span class="ident">analyze</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p><code>response</code> 解析控制器</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class analyze():
+    &#39;&#39;&#39;`response` 解析控制器&#39;&#39;&#39;
+
+    @staticmethod
+    def xpath(response, analytic : dict, auxiliary = original):
+        &#39;&#39;&#39; xpath 解析方法.
+
+        Args:
+            `response` : `response` response响应
+            `analytic` : `dict[str:str]` xpath解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        html = etree.HTML(responsecoding(response))
+        res = {}
+        for i, j in analytic.items():
+            res[i] = [auxiliary(r) for r in html.xpath(j)]
+        return res
+
+    @staticmethod
+    def json(response, analytic : dict, auxiliary = original):
+        &#39;&#39;&#39; json 解析方法.
+
+        Args:
+            `response` : `response` response响应
+            `analytic` : `dict[str:str]` json解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        if response.apparent_encoding == None:
+            response.encoding = &#39;utf-8&#39;
+        else:
+            response.encoding = response.apparent_encoding
+        reDict = {}
+        for i,j in analytic.items():
+            reDict[i] = auxiliary(XDict(response.json(),j).edict())
+        return reDict
+
+    @staticmethod
+    def re(response, analytic : dict, auxiliary = original):
+        &#39;&#39;&#39; re 解析方法.
+
+        Args:
+            `response` : `response` response响应
+            `analytic` : `dict[str:str]` re解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = []
+        html = etree.HTML(responsecoding(response))
+        res = {}
+        for i, j in analytic.items():
+            res[i]=[auxiliary(r) for r in j(html)]
+        return res
+
+    @staticmethod
+    def css(response, analytic : dict, auxiliary = original):
+        &#39;&#39;&#39; css 解析方法.
+
+        Args:
+            `response` : `response` response响应
+            `analytic` : `dict[str:str]` css解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = []
+        html = parsel.Selector(responsecoding(response))
+        res = {}
+        for i, j in analytic.items():
+            res[i] = [auxiliary(r) for r in html.css(j).extract()]
+        return res        </code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="lupro.analyze.css"><code class="name flex">
+<span>def <span class="ident">css</span></span>(<span>response, analytic: dict, auxiliary=&lt;function original&gt;)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>css 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>response</code> : <code>response</code> response响应
+<code>analytic</code> : <code>dict[str:str]</code> css解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def css(response, analytic : dict, auxiliary = original):
+    &#39;&#39;&#39; css 解析方法.
+
+    Args:
+        `response` : `response` response响应
+        `analytic` : `dict[str:str]` css解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    res = []
+    html = parsel.Selector(responsecoding(response))
+    res = {}
+    for i, j in analytic.items():
+        res[i] = [auxiliary(r) for r in html.css(j).extract()]
+    return res        </code></pre>
+</details>
+</dd>
+<dt id="lupro.analyze.json"><code class="name flex">
+<span>def <span class="ident">json</span></span>(<span>response, analytic: dict, auxiliary=&lt;function original&gt;)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>json 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>response</code> : <code>response</code> response响应
+<code>analytic</code> : <code>dict[str:str]</code> json解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def json(response, analytic : dict, auxiliary = original):
+    &#39;&#39;&#39; json 解析方法.
+
+    Args:
+        `response` : `response` response响应
+        `analytic` : `dict[str:str]` json解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    if response.apparent_encoding == None:
+        response.encoding = &#39;utf-8&#39;
+    else:
+        response.encoding = response.apparent_encoding
+    reDict = {}
+    for i,j in analytic.items():
+        reDict[i] = auxiliary(XDict(response.json(),j).edict())
+    return reDict</code></pre>
+</details>
+</dd>
+<dt id="lupro.analyze.re"><code class="name flex">
+<span>def <span class="ident">re</span></span>(<span>response, analytic: dict, auxiliary=&lt;function original&gt;)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>re 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>response</code> : <code>response</code> response响应
+<code>analytic</code> : <code>dict[str:str]</code> re解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def re(response, analytic : dict, auxiliary = original):
+    &#39;&#39;&#39; re 解析方法.
+
+    Args:
+        `response` : `response` response响应
+        `analytic` : `dict[str:str]` re解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    res = []
+    html = etree.HTML(responsecoding(response))
+    res = {}
+    for i, j in analytic.items():
+        res[i]=[auxiliary(r) for r in j(html)]
+    return res</code></pre>
+</details>
+</dd>
+<dt id="lupro.analyze.xpath"><code class="name flex">
+<span>def <span class="ident">xpath</span></span>(<span>response, analytic: dict, auxiliary=&lt;function original&gt;)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>xpath 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>response</code> : <code>response</code> response响应
+<code>analytic</code> : <code>dict[str:str]</code> xpath解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def xpath(response, analytic : dict, auxiliary = original):
+    &#39;&#39;&#39; xpath 解析方法.
+
+    Args:
+        `response` : `response` response响应
+        `analytic` : `dict[str:str]` xpath解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    html = etree.HTML(responsecoding(response))
+    res = {}
+    for i, j in analytic.items():
+        res[i] = [auxiliary(r) for r in html.xpath(j)]
+    return res</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="lupro.batch"><code class="flex name class">
+<span>class <span class="ident">batch</span></span>
+<span>(</span><span>instantiation, url: list, filenameNo: list = [])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量任务控制器</p>
+<p>实例化生成器</p>
+<h2 id="args">Args</h2>
+<p><code>instantiation</code> : <code><a title="lupro.lupro" href="#lupro.lupro">lupro</a></code> lupro模板实例
+<code>url</code> : <code>list</code> 链接表
+<code>filenameNo</code> : <code>list</code> filename 序列且此序列会继承 <code>instantiation.filename</code> </p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class batch():
+    &#39;&#39;&#39;批量任务控制器&#39;&#39;&#39;
+
+    def __init__(self, instantiation, url : list, filenameNo : list = []) -&gt; list:
+        &#39;&#39;&#39;实例化生成器
+
+        Args:
+            `instantiation` : `lupro` lupro模板实例
+            `url` : `list` 链接表
+            `filenameNo` : `list` filename 序列且此序列会继承 `instantiation.filename` 
+
+        Returns:
+            None
+        &#39;&#39;&#39;
+        self.name = instantiation.filename
+        self.generator = generator(instantiation, url, filenameNo)
+        self.filenameNo = [i.filename for i in self.generator]
+        persistence.shelve.add(self.name, {})
+    
+    # 任务自省
+    @reconfig(config = persistence.ENABLED)
+    def province(self):
+        &#39;&#39;&#39;任务自省&#39;&#39;&#39;
+        fail, success, task = [], [], []
+        dbdict = persistence.shelve.put()
+        for i,j in enumerate(self.filenameNo):
+            if not j in dbdict:
+                fail.append(j)
+                task.append(self.generator[i])
+                success.append(&#39;-&#39;) # not perfect
+            else:
+                success.append(dbdict[j])
+        persistence.shelve.add(self.name, {&#39;success&#39; : success, &#39;task&#39; : task, &#39;filenameNo&#39; : self.filenameNo})
+
+        print(f&#34;批量任务 {self.name} &gt;&gt; 一共有 {len(self.filenameNo)} 次请求&#34;, f&#34;失败了 {len(fail)} 次&#34; ,sep = &#39;\n&#39;)
+        if not len(fail)==0:
+            res = &#39;\n&#39; + &#39;\n&#39;.join(fail)
+            print(f&#34;分别是: {res}&#34;)
+
+    # 冷重启
+    @staticmethod
+    def coldheavy(filename) -&gt; None:
+        &#39;&#39;&#39;冷重启
+
+        Args：
+            `filename` : `str` 冷重启对象的 `self.name`
+            
+        Returns:
+            None
+        &#39;&#39;&#39;
+        Batchsubmission(persistence.shelve.put()[filename][&#39;task&#39;])
+
+    # 任务回调
+    @staticmethod
+    def callback(filename) -&gt; list:
+        &#39;&#39;&#39;任务反持久化
+
+        Args：
+            `filename` : `str` 冷重启对象的 `self.name`
+            
+        Returns:
+            list task列表
+        &#39;&#39;&#39;
+        container = persistence.shelve.put()
+        return {i:container.get(i) for i in container[filename][&#39;filenameNo&#39;]}
+        
+    # 批量请求
+    @abnormal
+    def Batchsubmission(self) -&gt; list:
+        &#39;&#39;&#39;批量请求&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return Batchsubmission(self.generator)
+    
+    # 批量下载
+    @abnormal
+    def BulkDownload(self) -&gt; list:
+        &#39;&#39;&#39;批量下载&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return BulkDownload(self.generator)
+    
+    # 批量解析
+    @abnormal
+    def Batchanalysis(self, mold : str , analytic : dict, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return Batchanalysis(mold, self.generator, analytic, auxiliary)
+    
+    # xpath 批量解析
+    @abnormal
+    def xpath_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;xpath 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return xpath_Batchanalysis(self.generator, analytic, auxiliary)
+    
+    # json 批量解析
+    @abnormal
+    def json_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;json 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return json_Batchanalysis(self, analytic, auxiliary)    
+    
+    # 正则 批量解析
+    @abnormal
+    def re_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+        &#39;&#39;&#39;正则 批量解析&#39;&#39;&#39;
+        atexit.register(batch.province, self)
+        return re_Batchanalysis(self.generator, analytic, auxiliary)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="lupro.batch.callback"><code class="name flex">
+<span>def <span class="ident">callback</span></span>(<span>filename) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>任务反持久化</p>
+<p>Args：
+<code>filename</code> : <code>str</code> 冷重启对象的 <code>self.name</code></p>
+<h2 id="returns">Returns</h2>
+<p>list task列表</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def callback(filename) -&gt; list:
+    &#39;&#39;&#39;任务反持久化
+
+    Args：
+        `filename` : `str` 冷重启对象的 `self.name`
+        
+    Returns:
+        list task列表
+    &#39;&#39;&#39;
+    container = persistence.shelve.put()
+    return {i:container.get(i) for i in container[filename][&#39;filenameNo&#39;]}</code></pre>
+</details>
+</dd>
+<dt id="lupro.batch.coldheavy"><code class="name flex">
+<span>def <span class="ident">coldheavy</span></span>(<span>filename) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>冷重启</p>
+<p>Args：
+<code>filename</code> : <code>str</code> 冷重启对象的 <code>self.name</code></p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def coldheavy(filename) -&gt; None:
+    &#39;&#39;&#39;冷重启
+
+    Args：
+        `filename` : `str` 冷重启对象的 `self.name`
+        
+    Returns:
+        None
+    &#39;&#39;&#39;
+    Batchsubmission(persistence.shelve.put()[filename][&#39;task&#39;])</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="lupro.batch.Batchanalysis"><code class="name flex">
+<span>def <span class="ident">Batchanalysis</span></span>(<span>self, mold: str, analytic: dict, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def Batchanalysis(self, mold : str , analytic : dict, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return Batchanalysis(mold, self.generator, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.batch.Batchsubmission"><code class="name flex">
+<span>def <span class="ident">Batchsubmission</span></span>(<span>self) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量请求</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def Batchsubmission(self) -&gt; list:
+    &#39;&#39;&#39;批量请求&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return Batchsubmission(self.generator)</code></pre>
+</details>
+</dd>
+<dt id="lupro.batch.BulkDownload"><code class="name flex">
+<span>def <span class="ident">BulkDownload</span></span>(<span>self) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>批量下载</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def BulkDownload(self) -&gt; list:
+    &#39;&#39;&#39;批量下载&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return BulkDownload(self.generator)</code></pre>
+</details>
+</dd>
+<dt id="lupro.batch.json_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">json_Batchanalysis</span></span>(<span>self, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>json 批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def json_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;json 批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return json_Batchanalysis(self, analytic, auxiliary)    </code></pre>
+</details>
+</dd>
+<dt id="lupro.batch.province"><code class="name flex">
+<span>def <span class="ident">province</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>任务自省</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@reconfig(config = persistence.ENABLED)
+def province(self):
+    &#39;&#39;&#39;任务自省&#39;&#39;&#39;
+    fail, success, task = [], [], []
+    dbdict = persistence.shelve.put()
+    for i,j in enumerate(self.filenameNo):
+        if not j in dbdict:
+            fail.append(j)
+            task.append(self.generator[i])
+            success.append(&#39;-&#39;) # not perfect
+        else:
+            success.append(dbdict[j])
+    persistence.shelve.add(self.name, {&#39;success&#39; : success, &#39;task&#39; : task, &#39;filenameNo&#39; : self.filenameNo})
+
+    print(f&#34;批量任务 {self.name} &gt;&gt; 一共有 {len(self.filenameNo)} 次请求&#34;, f&#34;失败了 {len(fail)} 次&#34; ,sep = &#39;\n&#39;)
+    if not len(fail)==0:
+        res = &#39;\n&#39; + &#39;\n&#39;.join(fail)
+        print(f&#34;分别是: {res}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="lupro.batch.re_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">re_Batchanalysis</span></span>(<span>self, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>正则 批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def re_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;正则 批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return re_Batchanalysis(self.generator, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.batch.xpath_Batchanalysis"><code class="name flex">
+<span>def <span class="ident">xpath_Batchanalysis</span></span>(<span>self, analytic, auxiliary=&lt;function original&gt;) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>xpath 批量解析</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abnormal
+def xpath_Batchanalysis(self, analytic, auxiliary = original) -&gt; list:
+    &#39;&#39;&#39;xpath 批量解析&#39;&#39;&#39;
+    atexit.register(batch.province, self)
+    return xpath_Batchanalysis(self.generator, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="lupro.lupro"><code class="flex name class">
+<span>class <span class="ident">lupro</span></span>
+<span>(</span><span>filename: str, lupros: <a title="lupro.hooks.lupros" href="hooks.html#lupro.hooks.lupros">lupros</a>, proxie: bool = False, format: str = 'html', content: int = 200, faultolt: int = 10)</span>
+</code></dt>
+<dd>
+<div class="desc"><p><code><a title="lupro.lupro" href="#lupro.lupro">lupro</a></code> 引擎基类</p>
+<p>初始化 <code><a title="lupro.lupro" href="#lupro.lupro">lupro</a></code> 实例，一个实例代表一个请求或任务.</p>
+<h2 id="args">Args</h2>
+<p><code>filename</code> : <code>str</code> 文件路径或请求名称 推荐使用路径命名
+<code><a title="lupro.lupros" href="#lupro.lupros">lupros</a></code> : <code><a title="lupro.lupros" href="#lupro.lupros">lupros</a></code> requests参数字典
+<code>proxie</code> : <code>bool</code> 是否使用代理
+<code>format</code> : <code>str</code> 保存文件格式
+<code>content</code> : <code>int</code> 回调最少字节
+<code>faultolt</code> : <code>int</code> 可重试次数</p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class lupro(metaclass = inherit):
+    &#39;&#39;&#39;`lupro` 引擎基类&#39;&#39;&#39;
+
+    # 兼容 `requests`
+    __general__ = HTTP_ENGINE
+
+    # 当前文件夹
+    onFile = RUNFILE
+
+    # 代理池
+    Proxies = PROXIES
+
+    # 是否验证代理池
+    VERIFY_PROXIES = VERIFY_PROXIES
+
+    # 是否已验证代理
+    IS_AGENT_VERIFIED = False
+
+    def __init__(self, filename : str, lupros : lupros, proxie : bool = False, format : str = &#39;html&#39;, content : int = 200,faultolt : int = 10):
+        &#39;&#39;&#39; 初始化 `lupro` 实例，一个实例代表一个请求或任务.
+
+        Args:
+            `filename` : `str` 文件路径或请求名称 推荐使用路径命名
+            `lupros` : `lupros` requests参数字典
+            `proxie` : `bool` 是否使用代理
+            `format` : `str` 保存文件格式
+            `content` : `int` 回调最少字节
+            `faultolt` : `int` 可重试次数
+        
+        Returns:
+            None
+        &#39;&#39;&#39;
+        self.filename = filename    # 文件路径或请求名称 推荐使用路径命名
+        self.format = format        # 保存文件格式
+        self.faultolt = faultolt    # 可重试次数
+        self.proxie = proxie        # 是否使用代理
+        self.content = content      # 回调最少字节
+        self.lupros = lupros
+        self.args = (lupros[0],*lupros[1])
+        self.kw = copy(lupros[2])
+
+        if (not lupro.Proxies) and self.proxie:
+            lupro.Proxies = get_proxies()
+
+        assert (not self.proxie) or (self.proxie and lupro.Proxies),&#39;`Proxies` cannot be empty!&#39;
+
+        if not &#39;headers&#39; in self.kw:
+            self.kw[&#39;headers&#39;] = {&#39;User-Agent&#39; : get_header()}
+        elif not &#39;User-Agent&#39; in self.kw[&#39;headers&#39;]:
+            self.kw[&#39;headers&#39;].update({&#39;User-Agent&#39; : get_header()})
+        
+        if lupro.VERIFY_PROXIES and self.proxie and (not lupro.IS_AGENT_VERIFIED):
+            print(logging(&#39;开始验证代理！&#39;))
+            t1 = datetime.now()
+            self.authentication()
+            lupro.IS_AGENT_VERIFIED = True
+            print(logging(f&#39;用时{datetime.now() - t1}&#39;))
+            print(logging(f&#34;高质量代理：{len(lupro.Proxies)}个！&#34;))
+
+        if (not &#39;proxies&#39; in self.kw) and self.proxie:
+            self.proxie = random.choice(lupro.Proxies)
+            self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
+    
+    # 验证代理
+    def authentication(self) -&gt; None:
+        &#39;&#39;&#39;`authentication` 为快速代理验证.&#39;&#39;&#39;
+
+        auth_proxies = [gevent.spawn(verify_proxies, i) for i in lupro.Proxies]
+        gevent.joinall(auth_proxies)
+        lupro.Proxies = [i.value for i in auth_proxies if i.value]
+
+    # 更新字典
+    def renew_proxie(self):
+        &#39;&#39;&#39;lupro实例 更新字典&#39;&#39;&#39;
+        lupro.Proxies.remove(self.proxie)
+        self.proxie = random.choice(lupro.Proxies)
+        if lupro.__general__.__name__ == &#39;requests&#39;:
+            self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
+        elif lupro.__general__.__name__ == &#39;httpx&#39;:
+            self.kw[&#39;proxies&#39;] = {&#39;http://&#39;: f&#34;http://{self.proxie}&#34;}
+
+    # 请求方法 lupro 所有请求
+    @endurance
+    def task(self):
+        &#39;&#39;&#39;请求方法 lupro 所有请求接口&#39;&#39;&#39;
+        def ask(self):
+            if self.faultolt &lt;= 0:
+                print(f&#39;{self.filename} failed.&#39;)
+                return None
+            print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
+            try:
+                res = getattr(engine, lupro.__general__.__name__)(self)
+            except:
+                if self.proxie and self.proxie in lupro.Proxies:
+                    self.renew_proxie()
+                self.faultolt -= 1
+                print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
+                return ask(self)
+            if not res.status_code == 200:
+                return ask(self)
+            if len(res.content) &lt; self.content:
+                return ask(self)
+            print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;)) 
+            return res     
+        return ask(self)
+    
+    # xpath 解析
+    def xpath_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+        &#39;&#39;&#39;实例 xpath 解析方法.
+
+        Args:
+            `analytic` : `dict[str:str]` xpath解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = self.task()
+        if not res:
+            return {}
+        return analyze.xpath(res, analytic, auxiliary)
+
+    # json 解析
+    def json_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+        &#39;&#39;&#39;实例 json 解析方法.
+
+        Args:
+            `analytic` : `dict[str:str]` xpath解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = self.task()
+        if not res:
+            return {}
+        return analyze.json(res, analytic, auxiliary)
+
+    # 正则 解析
+    def re_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+        &#39;&#39;&#39;实例 正则 解析方法.
+
+        Args:
+            `analytic` : `dict`{`str`:`function`} 正则解析字典 
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = self.task()
+        if not res:
+            return {}
+        return analyze.re(res, analytic, auxiliary)
+
+    # css 解析
+    def css_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+        &#39;&#39;&#39;实例 css 解析方法.
+
+        Args:
+            `analytic` : `dict[str:str]` css解析字典
+            `auxiliary` : `function` 自定义解析处理
+        
+        Returns:
+            dict : 解析字典
+        &#39;&#39;&#39;
+        res = self.task()
+        if not res:
+            return {}
+        return analyze.css(res, analytic, auxiliary)
+
+    # 保存文件路径
+    def save_file(self) -&gt; str:
+        &#39;&#39;&#39;保存文件方法，如果 `filename` 不为绝对路径,则保存文件的路径为当前目录&#39;&#39;&#39;
+
+        res = self.task()
+        if not res:
+            return &#39;&#39;
+        if os.path.isabs(self.filename):
+            path = os.path.split(self.filename)[0]
+        else:
+            path = os.path.join(self.onFile,os.path.split(self.filename)[0])
+        if not os.path.exists(path):
+            os.makedirs(path)
+        path = os.path.join(path,os.path.split(self.filename)[1]+f&#39;.{self.format}&#39;)
+        if res.apparent_encoding == None:
+            res.encoding = &#39;utf-8&#39;
+        else:
+            res.encoding = res.apparent_encoding
+        with open(path,mode=&#39;wb&#39;) as f:
+            f.write(res.content)
+        return path
+
+    def __repr__(self) -&gt; str:
+        return f&#34;&lt;{__name__}.lupro({lupro.__general__.__name__}) object {self.filename}&gt;&#34;
+
+    def __reprs__(self) -&gt; dict:
+        &#39;&#39;&#39; `__reprs__` 为 `lupro` 实例化参数&#39;&#39;&#39;
+        return {&#39;filename&#39;:self.filename ,&#39;format&#39;:self.format , &#39;proxie&#39;:self.proxie, &#39;faultolt&#39;:self.faultolt, &#39;content&#39; : self.content ,&#39;lupros&#39;:self.lupros}</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="lupro.lupro.IS_AGENT_VERIFIED"><code class="name">var <span class="ident">IS_AGENT_VERIFIED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="lupro.lupro.Proxies"><code class="name">var <span class="ident">Proxies</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="lupro.lupro.VERIFY_PROXIES"><code class="name">var <span class="ident">VERIFY_PROXIES</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="lupro.lupro.onFile"><code class="name">var <span class="ident">onFile</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="lupro.lupro.authentication"><code class="name flex">
+<span>def <span class="ident">authentication</span></span>(<span>self) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p><code>authentication</code> 为快速代理验证.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def authentication(self) -&gt; None:
+    &#39;&#39;&#39;`authentication` 为快速代理验证.&#39;&#39;&#39;
+
+    auth_proxies = [gevent.spawn(verify_proxies, i) for i in lupro.Proxies]
+    gevent.joinall(auth_proxies)
+    lupro.Proxies = [i.value for i in auth_proxies if i.value]</code></pre>
+</details>
+</dd>
+<dt id="lupro.lupro.css_analysis"><code class="name flex">
+<span>def <span class="ident">css_analysis</span></span>(<span>self, analytic: dict, auxiliary=&lt;function original&gt;) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>实例 css 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>analytic</code> : <code>dict[str:str]</code> css解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def css_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+    &#39;&#39;&#39;实例 css 解析方法.
+
+    Args:
+        `analytic` : `dict[str:str]` css解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    res = self.task()
+    if not res:
+        return {}
+    return analyze.css(res, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.lupro.json_analysis"><code class="name flex">
+<span>def <span class="ident">json_analysis</span></span>(<span>self, analytic: dict, auxiliary=&lt;function original&gt;) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>实例 json 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>analytic</code> : <code>dict[str:str]</code> xpath解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def json_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+    &#39;&#39;&#39;实例 json 解析方法.
+
+    Args:
+        `analytic` : `dict[str:str]` xpath解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    res = self.task()
+    if not res:
+        return {}
+    return analyze.json(res, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.lupro.re_analysis"><code class="name flex">
+<span>def <span class="ident">re_analysis</span></span>(<span>self, analytic: dict, auxiliary=&lt;function original&gt;) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>实例 正则 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>analytic</code> : <code>dict</code>{<code>str</code>:<code>function</code>} 正则解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def re_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+    &#39;&#39;&#39;实例 正则 解析方法.
+
+    Args:
+        `analytic` : `dict`{`str`:`function`} 正则解析字典 
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    res = self.task()
+    if not res:
+        return {}
+    return analyze.re(res, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+<dt id="lupro.lupro.renew_proxie"><code class="name flex">
+<span>def <span class="ident">renew_proxie</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>lupro实例 更新字典</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def renew_proxie(self):
+    &#39;&#39;&#39;lupro实例 更新字典&#39;&#39;&#39;
+    lupro.Proxies.remove(self.proxie)
+    self.proxie = random.choice(lupro.Proxies)
+    if lupro.__general__.__name__ == &#39;requests&#39;:
+        self.kw[&#39;proxies&#39;] = {&#39;http&#39;: f&#34;//{self.proxie}&#34;}
+    elif lupro.__general__.__name__ == &#39;httpx&#39;:
+        self.kw[&#39;proxies&#39;] = {&#39;http://&#39;: f&#34;http://{self.proxie}&#34;}</code></pre>
+</details>
+</dd>
+<dt id="lupro.lupro.save_file"><code class="name flex">
+<span>def <span class="ident">save_file</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>保存文件方法，如果 <code>filename</code> 不为绝对路径,则保存文件的路径为当前目录</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_file(self) -&gt; str:
+    &#39;&#39;&#39;保存文件方法，如果 `filename` 不为绝对路径,则保存文件的路径为当前目录&#39;&#39;&#39;
+
+    res = self.task()
+    if not res:
+        return &#39;&#39;
+    if os.path.isabs(self.filename):
+        path = os.path.split(self.filename)[0]
+    else:
+        path = os.path.join(self.onFile,os.path.split(self.filename)[0])
+    if not os.path.exists(path):
+        os.makedirs(path)
+    path = os.path.join(path,os.path.split(self.filename)[1]+f&#39;.{self.format}&#39;)
+    if res.apparent_encoding == None:
+        res.encoding = &#39;utf-8&#39;
+    else:
+        res.encoding = res.apparent_encoding
+    with open(path,mode=&#39;wb&#39;) as f:
+        f.write(res.content)
+    return path</code></pre>
+</details>
+</dd>
+<dt id="lupro.lupro.task"><code class="name flex">
+<span>def <span class="ident">task</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>请求方法 lupro 所有请求接口</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@endurance
+def task(self):
+    &#39;&#39;&#39;请求方法 lupro 所有请求接口&#39;&#39;&#39;
+    def ask(self):
+        if self.faultolt &lt;= 0:
+            print(f&#39;{self.filename} failed.&#39;)
+            return None
+        print(logging(f&#34;{self.filename} {self.proxie} -----&gt; 开始请求！&#34;))
+        try:
+            res = getattr(engine, lupro.__general__.__name__)(self)
+        except:
+            if self.proxie and self.proxie in lupro.Proxies:
+                self.renew_proxie()
+            self.faultolt -= 1
+            print(logging(f&#34;{self.filename} -----&gt; 更新字典中！{self.faultolt}&#34;))
+            return ask(self)
+        if not res.status_code == 200:
+            return ask(self)
+        if len(res.content) &lt; self.content:
+            return ask(self)
+        print(logging(f&#34;{self.filename} {len(res.content)} -----&gt; 请求结束！&#34;)) 
+        return res     
+    return ask(self)</code></pre>
+</details>
+</dd>
+<dt id="lupro.lupro.xpath_analysis"><code class="name flex">
+<span>def <span class="ident">xpath_analysis</span></span>(<span>self, analytic: dict, auxiliary=&lt;function original&gt;) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>实例 xpath 解析方法.</p>
+<h2 id="args">Args</h2>
+<p><code>analytic</code> : <code>dict[str:str]</code> xpath解析字典
+<code>auxiliary</code> : <code>function</code> 自定义解析处理</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict </code></dt>
+<dd>解析字典</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def xpath_analysis(self, analytic : dict, auxiliary = original) -&gt; dict:
+    &#39;&#39;&#39;实例 xpath 解析方法.
+
+    Args:
+        `analytic` : `dict[str:str]` xpath解析字典
+        `auxiliary` : `function` 自定义解析处理
+    
+    Returns:
+        dict : 解析字典
+    &#39;&#39;&#39;
+    res = self.task()
+    if not res:
+        return {}
+    return analyze.xpath(res, analytic, auxiliary)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="lupro.lupros"><code class="flex name class">
+<span>class <span class="ident">lupros</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p><code>HTTP参数引擎</code> 辅助字典生成器</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class lupros(metaclass = inherit):
+    &#39;&#39;&#39;`HTTP参数引擎` 辅助字典生成器&#39;&#39;&#39;
+
+    kernel = {&#39;requests&#39;: requests, &#39;httpx&#39; : httpx}
+
+    __general__ = kernel[HTTP_ENGINE.__name__]</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="lupro.lupros.kernel"><code class="name">var <span class="ident">kernel</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="lupro.persistence"><code class="flex name class">
+<span>class <span class="ident">persistence</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>对象持久化控制器</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class persistence():
+    &#39;&#39;&#39;对象持久化控制器&#39;&#39;&#39;
+
+    &#39;&#39;&#39;是否启用对象持久化&#39;&#39;&#39;
+    ENABLED = PERSISTENCE_ENABLED
+
+    # 对象持久化元类
+    class kernelk(type):
+        &#39;&#39;&#39;对象持久化元类&#39;&#39;&#39;
+        pass
+
+    # shelve内核
+    class shelve():
+        &#39;&#39;&#39;shelve内核&#39;&#39;&#39;
+
+        &#39;&#39;&#39;对象持久化存储路径&#39;&#39;&#39;
+        dbfile = PERSISTENCE_PATH
+
+        @classmethod
+        def add(cls, key : str, value : Any) -&gt; bool:
+            &#39;&#39;&#39;持久化一个新对象
+
+            Args：
+                `cls` : `persistence.shelve` 类对象
+                `key` : `str` 新增对象的键
+                `value` : `Any` 新增对象的值
+            
+            Returns:
+                `bool` : True
+            &#39;&#39;&#39;
+
+            with shelve.open(persistence.shelve.dbfile) as f:
+                f[key] = value
+            return True
+        
+        @classmethod
+        def put(cls):
+            &#39;&#39;&#39;持久化一个新对象
+
+            Args：
+                `cls` : `persistence.shelve` 类对象
+            
+            Returns:
+                `shelve` : 当前路径shelve对象字典
+            &#39;&#39;&#39;
+
+            with shelve.open(persistence.shelve.dbfile) as f:
+                res = {i:j for i,j in f.items()}
+            return res
+
+    # ZODB内核
+    class ZODB():
+        &#39;&#39;&#39;ZODB内核&#39;&#39;&#39;
+
+        pass  </code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="lupro.persistence.ENABLED"><code class="name">var <span class="ident">ENABLED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="lupro.persistence.ZODB"><code class="name">var <span class="ident">ZODB</span></code></dt>
+<dd>
+<div class="desc"><p>ZODB内核</p></div>
+</dd>
+<dt id="lupro.persistence.kernelk"><code class="name">var <span class="ident">kernelk</span></code></dt>
+<dd>
+<div class="desc"><p>对象持久化元类</p></div>
+</dd>
+<dt id="lupro.persistence.shelve"><code class="name">var <span class="ident">shelve</span></code></dt>
+<dd>
+<div class="desc"><p>shelve内核</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -145,6 +1601,7 @@ v1.0.6
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
 <li><code><a title="lupro.HTTPengine" href="HTTPengine.html">lupro.HTTPengine</a></code></li>
+<li><code><a title="lupro.analyzesController" href="analyzesController.html">lupro.analyzesController</a></code></li>
 <li><code><a title="lupro.api" href="api.html">lupro.api</a></code></li>
 <li><code><a title="lupro.config" href="config.html">lupro.config</a></code></li>
 <li><code><a title="lupro.controller" href="controller.html">lupro.controller</a></code></li>
@@ -152,6 +1609,77 @@ v1.0.6
 <li><code><a title="lupro.publictool" href="publictool.html">lupro.publictool</a></code></li>
 <li><code><a title="lupro.typing" href="typing.html">lupro.typing</a></code></li>
 <li><code><a title="lupro.useragent" href="useragent.html">lupro.useragent</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="two-column">
+<li><code><a title="lupro.Batchanalysis" href="#lupro.Batchanalysis">Batchanalysis</a></code></li>
+<li><code><a title="lupro.Batchsubmission" href="#lupro.Batchsubmission">Batchsubmission</a></code></li>
+<li><code><a title="lupro.BulkDownload" href="#lupro.BulkDownload">BulkDownload</a></code></li>
+<li><code><a title="lupro.async_lupro" href="#lupro.async_lupro">async_lupro</a></code></li>
+<li><code><a title="lupro.generator" href="#lupro.generator">generator</a></code></li>
+<li><code><a title="lupro.json_Batchanalysis" href="#lupro.json_Batchanalysis">json_Batchanalysis</a></code></li>
+<li><code><a title="lupro.re_Batchanalysis" href="#lupro.re_Batchanalysis">re_Batchanalysis</a></code></li>
+<li><code><a title="lupro.xpath_Batchanalysis" href="#lupro.xpath_Batchanalysis">xpath_Batchanalysis</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="lupro.analyze" href="#lupro.analyze">analyze</a></code></h4>
+<ul class="">
+<li><code><a title="lupro.analyze.css" href="#lupro.analyze.css">css</a></code></li>
+<li><code><a title="lupro.analyze.json" href="#lupro.analyze.json">json</a></code></li>
+<li><code><a title="lupro.analyze.re" href="#lupro.analyze.re">re</a></code></li>
+<li><code><a title="lupro.analyze.xpath" href="#lupro.analyze.xpath">xpath</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="lupro.batch" href="#lupro.batch">batch</a></code></h4>
+<ul class="two-column">
+<li><code><a title="lupro.batch.Batchanalysis" href="#lupro.batch.Batchanalysis">Batchanalysis</a></code></li>
+<li><code><a title="lupro.batch.Batchsubmission" href="#lupro.batch.Batchsubmission">Batchsubmission</a></code></li>
+<li><code><a title="lupro.batch.BulkDownload" href="#lupro.batch.BulkDownload">BulkDownload</a></code></li>
+<li><code><a title="lupro.batch.callback" href="#lupro.batch.callback">callback</a></code></li>
+<li><code><a title="lupro.batch.coldheavy" href="#lupro.batch.coldheavy">coldheavy</a></code></li>
+<li><code><a title="lupro.batch.json_Batchanalysis" href="#lupro.batch.json_Batchanalysis">json_Batchanalysis</a></code></li>
+<li><code><a title="lupro.batch.province" href="#lupro.batch.province">province</a></code></li>
+<li><code><a title="lupro.batch.re_Batchanalysis" href="#lupro.batch.re_Batchanalysis">re_Batchanalysis</a></code></li>
+<li><code><a title="lupro.batch.xpath_Batchanalysis" href="#lupro.batch.xpath_Batchanalysis">xpath_Batchanalysis</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="lupro.lupro" href="#lupro.lupro">lupro</a></code></h4>
+<ul class="two-column">
+<li><code><a title="lupro.lupro.IS_AGENT_VERIFIED" href="#lupro.lupro.IS_AGENT_VERIFIED">IS_AGENT_VERIFIED</a></code></li>
+<li><code><a title="lupro.lupro.Proxies" href="#lupro.lupro.Proxies">Proxies</a></code></li>
+<li><code><a title="lupro.lupro.VERIFY_PROXIES" href="#lupro.lupro.VERIFY_PROXIES">VERIFY_PROXIES</a></code></li>
+<li><code><a title="lupro.lupro.authentication" href="#lupro.lupro.authentication">authentication</a></code></li>
+<li><code><a title="lupro.lupro.css_analysis" href="#lupro.lupro.css_analysis">css_analysis</a></code></li>
+<li><code><a title="lupro.lupro.json_analysis" href="#lupro.lupro.json_analysis">json_analysis</a></code></li>
+<li><code><a title="lupro.lupro.onFile" href="#lupro.lupro.onFile">onFile</a></code></li>
+<li><code><a title="lupro.lupro.re_analysis" href="#lupro.lupro.re_analysis">re_analysis</a></code></li>
+<li><code><a title="lupro.lupro.renew_proxie" href="#lupro.lupro.renew_proxie">renew_proxie</a></code></li>
+<li><code><a title="lupro.lupro.save_file" href="#lupro.lupro.save_file">save_file</a></code></li>
+<li><code><a title="lupro.lupro.task" href="#lupro.lupro.task">task</a></code></li>
+<li><code><a title="lupro.lupro.xpath_analysis" href="#lupro.lupro.xpath_analysis">xpath_analysis</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="lupro.lupros" href="#lupro.lupros">lupros</a></code></h4>
+<ul class="">
+<li><code><a title="lupro.lupros.kernel" href="#lupro.lupros.kernel">kernel</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="lupro.persistence" href="#lupro.persistence">persistence</a></code></h4>
+<ul class="">
+<li><code><a title="lupro.persistence.ENABLED" href="#lupro.persistence.ENABLED">ENABLED</a></code></li>
+<li><code><a title="lupro.persistence.ZODB" href="#lupro.persistence.ZODB">ZODB</a></code></li>
+<li><code><a title="lupro.persistence.kernelk" href="#lupro.persistence.kernelk">kernelk</a></code></li>
+<li><code><a title="lupro.persistence.shelve" href="#lupro.persistence.shelve">shelve</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
