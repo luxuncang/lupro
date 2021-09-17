@@ -1,6 +1,6 @@
 # lupro 爬虫框架
 
-**lupro是一个完全兼容requests的异步爬虫框架**
+**lupro是一个优雅的异步爬虫框架**
 
 ## 安装 `Lupro`
 
