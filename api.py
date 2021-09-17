@@ -1,10 +1,11 @@
 '''lupro api'''
-
+import gevent
+from .config import HTTP_ENGINE
+from .typing import Union, Response
 from .hooks import lupros
-from .HTTPengine import lupro, requests
+from .HTTPengine import lupro, analyze, requests
 from .publictool import original
 from copy import copy
-import gevent
 
 # 实例化参数字典
 def requests_dict(luprodir,url,no) -> dict:
@@ -68,7 +69,6 @@ def BulkDownload(generator) -> list:
     '''通过实例列表的批量下载
     
     Args：
-
         `generator` : `list[lupro]` lupro实例列表
     
     Returns:
@@ -79,60 +79,69 @@ def BulkDownload(generator) -> list:
     return ([i.value for i in a])
 
 # xpath 批量解析
-def xpath_Batchanalysis(generator, analytic, auxiliary = original) -> list:
+def xpath_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], analytic : dict, auxiliary = original) -> list:
     ''' xpath批量解析器
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
         
     Returns:
         list[dict] : 解析列表
     '''
-    a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.xpath(i, analytic, auxiliary) for i in generator]
 
 # json 批量解析
-def json_Batchanalysis(generator, analytic, auxiliary = original) -> list:
+def json_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], analytic : dict, auxiliary = original) -> list:
     '''json批量解析器 <json解析器为 `dtanys`>
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
     
     Returns:
         list[dict] : 解析列表
     '''
-    a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.json(i, analytic, auxiliary) for i in generator]
 
 # 正则 批量解析
-def re_Batchanalysis(generator, analytic, auxiliary = original) -> list:
+def re_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], analytic : dict, auxiliary = original) -> list:
     '''正则解析器
 
     Args:
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict`{`str`:`function`} 正则解析字典 
         `auxiliary` : `function` 自定义解析处理
     
     Returns:
         list[dict] : 解析列表
     '''
-    a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
-    gevent.joinall(a)
-    return ([i.value for i in a])
+    if isinstance(generator[0], lupro):
+        a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
+        gevent.joinall(a)
+        return ([i.value for i in a])
+    else:
+        return [analyze.re(i, analytic, auxiliary) for i in generator]
 
 # 批量解析
-def Batchanalysis(mold : str ,generator : list, analytic : dict, auxiliary = original) -> list:
+def Batchanalysis(mold : str ,generator : Union["list[lupro]", "list[Response]"], analytic : dict, auxiliary = original) -> list:
     '''lupro批量解析
 
     Args:
         `mold` : `str` 解析方法
-        `generator` : `list[lupro]` lupro实例列表
+        `generator` : `Union[list[lupro], list[Response]]` lupro实例列表 或 Response实例列表
         `analytic` : `dict` 解析字典
         `auxiliary` : `function` 自定义解析处理
 
@@ -159,6 +168,6 @@ def async_lupro(generator : "list[lupros]") -> list:
         list[Response] : Response列表
     '''
 
-    a = [gevent.spawn(requests.request,i[0],*i[1],**i[2]) for i in generator]
+    a = [gevent.spawn(HTTP_ENGINE.request,i[0],*i[1],**i[2]) for i in generator]
     gevent.joinall(a)
     return ([i.value for i in a])

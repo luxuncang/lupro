@@ -69,10 +69,10 @@ class batch():
             `filename` : `str` 冷重启对象的 `self.name`
             
         Returns:
-            None
+            list task列表
         '''
         container = persistence.shelve.put()
-        return [container.get(i) for i in container[filename]['filenameNo']]
+        return {i:container.get(i) for i in container[filename]['filenameNo']}
         
     # 批量请求
     @abnormal

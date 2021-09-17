@@ -6,6 +6,7 @@ from .useragent import ua_list
 import random
 from datetime import datetime
 import requests
+import httpx
 import os
 import sys
 
@@ -28,7 +29,7 @@ __all__ = [
 RUNFILE = os.path.split(sys.argv[0])[0]
 
 # HTTP引擎
-HTTP_ENGINE = requests
+HTTP_ENGINE = httpx
 
 # 对象持久化
 PERSISTENCE_ENABLED = False
@@ -88,8 +89,12 @@ def verify_proxies(proxies : str) -> str:
     Returns:
         str | bool : 如果可用返回 `proxies` 否则返回 `False`
     '''
+
     try:
-        requests.get(url='http://www.baidu.com/', headers={"User-Agent": get_header()},proxies={'http': f"//{proxies}"},timeout=10)
+        if HTTP_ENGINE.__name__ == 'requests':
+            HTTP_ENGINE.get(url='http://www.baidu.com/', headers={"User-Agent": get_header()}, proxies = {'http': f"//{proxies}"}, timeout=10)
+        elif HTTP_ENGINE.__name__ == 'httpx':
+            HTTP_ENGINE.get(url='http://www.baidu.com/', headers={"User-Agent": get_header()}, proxies = {'http://': f"http://{proxies}"}, timeout=10)
     except:
         return False
     return proxies

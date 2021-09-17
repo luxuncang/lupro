@@ -59,13 +59,53 @@ class requests(metaclass = repr):
         return ('delete', args, kw)
 
     def __repr__(self) -> str:
-        return f"<{__name__}.requests object >"
+        return "<lupros.requests object >"
+
+# httpx参数引擎
+class httpx(metaclass = repr):
+    '''`httpx参数引擎` 辅助字典生成器'''
+
+    @classmethod
+    def request(cls, *args, **kw):
+        return (args, kw)
+
+    @classmethod
+    def get(cls, *args, **kw):
+        return ('GET', args, kw)
+
+    @classmethod
+    def post(cls, *args, **kw):
+        return ('POST', args, kw)
+
+    @classmethod
+    def options(cls, *args, **kw):
+        return ('OPTIONS', args, kw)
+
+    @classmethod
+    def head(cls, *args, **kw):
+        return ('HEAD', args, kw)
+
+    @classmethod
+    def put(cls, *args, **kw):
+        return ('PUT', args, kw)
+
+    @classmethod
+    def patch(cls, *args, **kw):
+        return ('PATCH', args, kw)
+
+    @classmethod
+    def delete(cls, *args, **kw):
+        return ('DELETE', args, kw)
+
+    def __repr__(self) -> str:
+        return "<lupros.httpx object >"
 
 # `HTTP参数引擎` 
 class lupros(metaclass = inherit):
     '''`HTTP参数引擎` 辅助字典生成器'''
 
-    kernel = {'requests': requests}
+    kernel = {'requests': requests, 'httpx' : httpx}
 
     __general__ = kernel[HTTP_ENGINE.__name__]
+
 

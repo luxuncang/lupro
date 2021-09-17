@@ -1,10 +1,10 @@
 '''lupro 工具箱'''
 
-from .typing import Any
+from .typing import Any , Response
 from .config import PERSISTENCE_ENABLED, PERSISTENCE_PATH
 from decorator import decorator
 import shelve
-
+import chardet
 
 # 泛属性元类
 class inherit(type):
@@ -128,3 +128,18 @@ def putdefault(value, default) -> Any:
         return value
     else:
         return default
+
+# bytes编码解析
+def bytescoding(response : bytes) -> str:
+    '''bytes编码解析'''
+    dend = chardet.detect(response)
+    return response.decode(encoding = dend['encoding'])
+
+# response编码解析
+def responsecoding(response : Response) -> str:
+    '''response编码解析'''
+    if response.apparent_encoding == None:
+        return bytescoding(response.content)
+    else:
+        response.encoding = response.apparent_encoding
+        return response.content.decode(response.encoding, 'ignore')
