@@ -26,15 +26,13 @@ class engine():
     @staticmethod
     def requests(self) -> Response:
         '''`engine.requests` 为 `requests` 请求接口'''
-        res = requests.request(*self.args, **self.kw)
-        return res
+        return requests.request(*self.args, **self.kw)
 
     # httpx
     @staticmethod
     def httpx(self):
         '''`engine.httpx` 为 `requests` 请求接口'''
-        res = requests.request(*self.args, **self.kw)
-        return res
+        return requests.request(*self.args, **self.kw)
 
 
 # `lupro` 引擎基类
@@ -84,11 +82,11 @@ class lupro(metaclass = inherit):
 
         assert (not self.proxie) or (self.proxie and lupro.Proxies),'`Proxies` cannot be empty!'
 
-        if not 'headers' in self.kw:
+        if 'headers' not in self.kw:
             self.kw['headers'] = {'User-Agent' : get_header()}
-        elif not 'User-Agent' in self.kw['headers']:
+        elif 'User-Agent' not in self.kw['headers']:
             self.kw['headers'].update({'User-Agent' : get_header()})
-        
+
         if lupro.VERIFY_PROXIES and self.proxie and (not lupro.IS_AGENT_VERIFIED):
             print(logging('开始验证代理！'))
             t1 = datetime.now()
@@ -97,7 +95,7 @@ class lupro(metaclass = inherit):
             print(logging(f'用时{datetime.now() - t1}'))
             print(logging(f"高质量代理：{len(lupro.Proxies)}个！"))
 
-        if (not 'proxies' in self.kw) and self.proxie:
+        if 'proxies' not in self.kw and self.proxie:
             self.proxie = random.choice(lupro.Proxies)
             self.kw['proxies'] = {'http': f"//{self.proxie}"}
     
@@ -136,11 +134,11 @@ class lupro(metaclass = inherit):
                 self.faultolt -= 1
                 print(logging(f"{self.filename} -----> 更新字典中！{self.faultolt}"))
                 return ask(self)
-            if not res.status_code == 200:
+            if res.status_code != 200:
                 return ask(self)
             if len(res.content) < self.content:
                 return ask(self)
-            print(logging(f"{self.filename} {len(res.content)} -----> 请求结束！")) 
+            print(logging(f"{self.filename} {len(res.content)} -----> 请求结束！"))
             return res     
         return ask(self)
     
@@ -221,8 +219,8 @@ class lupro(metaclass = inherit):
             path = os.path.join(self.onFile,os.path.split(self.filename)[0])
         if not os.path.exists(path):
             os.makedirs(path)
-        path = os.path.join(path,os.path.split(self.filename)[1]+f'.{self.format}')
-        if res.apparent_encoding == None:
+        path = os.path.join(path, f'{os.path.split(self.filename)[1]}.{self.format}')
+        if res.apparent_encoding is None:
             res.encoding = 'utf-8'
         else:
             res.encoding = res.apparent_encoding

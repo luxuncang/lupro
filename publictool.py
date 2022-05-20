@@ -10,11 +10,11 @@ import chardet
 class inherit(type):
     '''类泛属性'''
 
-    def __getattr__(cls, name):
-        if not '__general__' in dir(cls):
+    def __getattr__(self, name):
+        if '__general__' not in dir(self):
             raise NameError("name '__general__' is not defined")
-        if hasattr(cls.__general__, name):
-            return getattr(cls.__general__, name)
+        if hasattr(self.__general__, name):
+            return getattr(self.__general__, name)
         return getattr(object.__getattr__, name)
 
 # 对象持久化控制器
@@ -65,7 +65,7 @@ class persistence():
             '''
 
             with shelve.open(persistence.shelve.dbfile) as f:
-                res = {i:j for i,j in f.items()}
+                res = dict(f.items())
             return res
 
     # ZODB内核
@@ -90,10 +90,7 @@ def original(f) -> Any:
 @decorator
 def reconfig(func, config = True, *args, **kwargs):
     '''函数功能启停装饰器'''
-    if config:
-        return func(*args , **kwargs)
-    else:
-        return None
+    return func(*args , **kwargs) if config else None
 
 # 对象持久化装饰器
 @decorator
@@ -124,10 +121,7 @@ def putdefault(value, default) -> Any:
     Returns:
         `Any` : 默认值`default`
     '''
-    if value:
-        return value
-    else:
-        return default
+    return value or default
 
 # bytes编码解析
 def bytescoding(response : bytes) -> str:
@@ -138,8 +132,7 @@ def bytescoding(response : bytes) -> str:
 # response编码解析
 def responsecoding(response : Response) -> str:
     '''response编码解析'''
-    if response.apparent_encoding == None:
+    if response.apparent_encoding is None:
         return bytescoding(response.content)
-    else:
-        response.encoding = response.apparent_encoding
-        return response.content.decode(response.encoding, 'ignore')
+    response.encoding = response.apparent_encoding
+    return response.content.decode(response.encoding, 'ignore')

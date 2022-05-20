@@ -34,7 +34,7 @@ class batch():
         fail, success, task = [], [], []
         dbdict = persistence.shelve.put()
         for i,j in enumerate(self.filenameNo):
-            if not j in dbdict:
+            if j not in dbdict:
                 fail.append(j)
                 task.append(self.generator[i])
                 success.append('-') # not perfect
@@ -43,7 +43,7 @@ class batch():
         persistence.shelve.add(self.name, {'success' : success, 'task' : task, 'filenameNo' : self.filenameNo})
 
         print(f"批量任务 {self.name} >> 一共有 {len(self.filenameNo)} 次请求", f"失败了 {len(fail)} 次" ,sep = '\n')
-        if not len(fail)==0:
+        if fail:
             res = '\n' + '\n'.join(fail)
             print(f"分别是: {res}")
 

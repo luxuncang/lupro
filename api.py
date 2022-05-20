@@ -41,14 +41,10 @@ def generator(instantiation : lupro, url : list, filenameNo : list = []) -> list
     '''
     if not filenameNo:
         filenameNo = range(len(url))
-    else:
-        if not len(url)==len(filenameNo):
-            raise ValueError('"url" needs to be consistent with "FileNameno"!')
+    elif len(url) != len(filenameNo):
+        raise ValueError('"url" needs to be consistent with "FileNameno"!')
     repr = instantiation.__reprs__()
-    res = []
-    for i,j in enumerate(url):
-        res.append(lupro(**requests_dict(repr,j,filenameNo[i])))
-    return res
+    return [lupro(**requests_dict(repr,j,filenameNo[i])) for i,j in enumerate(url)]
 
 # 批量请求
 def Batchsubmission(generator) -> list:
@@ -90,12 +86,11 @@ def xpath_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], anal
     Returns:
         list[dict] : 解析列表
     '''
-    if isinstance(generator[0], lupro):
-        a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
-        gevent.joinall(a)
-        return ([i.value for i in a])
-    else:
+    if not isinstance(generator[0], lupro):
         return [analyze.xpath(i, analytic, auxiliary) for i in generator]
+    a = [gevent.spawn(i.xpath_analysis, analytic, auxiliary) for i in generator]
+    gevent.joinall(a)
+    return ([i.value for i in a])
 
 # json 批量解析
 def json_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], analytic : dict, auxiliary = original) -> list:
@@ -109,12 +104,11 @@ def json_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], analy
     Returns:
         list[dict] : 解析列表
     '''
-    if isinstance(generator[0], lupro):
-        a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
-        gevent.joinall(a)
-        return ([i.value for i in a])
-    else:
+    if not isinstance(generator[0], lupro):
         return [analyze.json(i, analytic, auxiliary) for i in generator]
+    a = [gevent.spawn(i.json_analysis, analytic, auxiliary) for i in generator]
+    gevent.joinall(a)
+    return ([i.value for i in a])
 
 # 正则 批量解析
 def re_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], analytic : dict, auxiliary = original) -> list:
@@ -128,12 +122,11 @@ def re_Batchanalysis(generator : Union["list[lupro]", "list[Response]"], analyti
     Returns:
         list[dict] : 解析列表
     '''
-    if isinstance(generator[0], lupro):
-        a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
-        gevent.joinall(a)
-        return ([i.value for i in a])
-    else:
+    if not isinstance(generator[0], lupro):
         return [analyze.re(i, analytic, auxiliary) for i in generator]
+    a = [gevent.spawn(i.re_analysis, analytic, auxiliary) for i in generator]
+    gevent.joinall(a)
+    return ([i.value for i in a])
 
 # 批量解析
 def Batchanalysis(mold : str ,generator : Union["list[lupro]", "list[Response]"], analytic : dict, auxiliary = original) -> list:

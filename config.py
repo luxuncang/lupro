@@ -77,7 +77,7 @@ def logging(text) -> str:
     Returns:
         str : 返回处理后的打印日志
     '''
-    return "%s INFO %s"  % (datetime.now(), text)
+    return f"{datetime.now()} INFO {text}"
 
 # 自定义代理验证
 def verify_proxies(proxies : str) -> str:

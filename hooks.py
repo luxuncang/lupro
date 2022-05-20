@@ -8,19 +8,19 @@ from .config import HTTP_ENGINE
 class inherit(type):
     '''类泛属性'''
 
-    def __getattr__(cls, name):
-        if not '__general__' in dir(cls):
+    def __getattr__(self, name):
+        if '__general__' not in dir(self):
             raise NameError("name '__general__' is not defined")
-        if hasattr(cls.__general__, name):
-            return getattr(cls.__general__, name)
-        raise AttributeError(f"method '{name}' is not defined in {cls.__general__}")
+        if hasattr(self.__general__, name):
+            return getattr(self.__general__, name)
+        raise AttributeError(f"method '{name}' is not defined in {self.__general__}")
 
 # 类方法描述
 class repr(type):
     '''类方法描述'''
 
-    def __repr__(cls) -> str:
-        return f"<lupros.{cls.__name__} object>"
+    def __repr__(self) -> str:
+        return f"<lupros.{self.__name__} object>"
 
 # requests参数引擎
 class requests(metaclass = repr):
