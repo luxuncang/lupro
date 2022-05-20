@@ -22,10 +22,7 @@ class analyze():
             dict : 解析字典
         '''
         html = etree.HTML(responsecoding(response))
-        res = {}
-        for i, j in analytic.items():
-            res[i] = [auxiliary(r) for r in html.xpath(j)]
-        return res
+        return {i: [auxiliary(r) for r in html.xpath(j)] for i, j in analytic.items()}
 
     @staticmethod
     def json(response, analytic : dict, auxiliary = original):
@@ -39,14 +36,16 @@ class analyze():
         Returns:
             dict : 解析字典
         '''
-        if response.apparent_encoding == None:
-            response.encoding = 'utf-8'
-        else:
-            response.encoding = response.apparent_encoding
-        reDict = {}
-        for i,j in analytic.items():
-            reDict[i] = auxiliary(XDict(response.json(),j).edict())
-        return reDict
+        response.encoding = (
+            'utf-8'
+            if response.apparent_encoding is None
+            else response.apparent_encoding
+        )
+
+        return {
+            i: auxiliary(XDict(response.json(), j).edict())
+            for i, j in analytic.items()
+        }
 
     @staticmethod
     def re(response, analytic : dict, auxiliary = original):
@@ -62,9 +61,7 @@ class analyze():
         '''
         res = []
         html = etree.HTML(responsecoding(response))
-        res = {}
-        for i, j in analytic.items():
-            res[i]=[auxiliary(r) for r in j(html)]
+        res = {i: [auxiliary(r) for r in j(html)] for i, j in analytic.items()}
         return res
 
     @staticmethod
@@ -81,7 +78,9 @@ class analyze():
         '''
         res = []
         html = parsel.Selector(responsecoding(response))
-        res = {}
-        for i, j in analytic.items():
-            res[i] = [auxiliary(r) for r in html.css(j).extract()]
+        res = {
+            i: [auxiliary(r) for r in html.css(j).extract()]
+            for i, j in analytic.items()
+        }
+
         return res        
